@@ -1,3 +1,20 @@
+/**
+ * @file Index.ets
+ * @description 音乐播放器主页面
+ * @module pages
+ * @author CodeArts
+ * @date 2026-04-02
+ *
+ * 功能特性:
+ * - 热门/新歌/随机/收藏四个Tab页面
+ * - 音乐搜索功能
+ * - 歌词显示和同步
+ * - 音乐播放控制
+ * - 歌曲下载功能
+ * - 下拉刷新
+ * - MVVM架构设计
+ */
+
 import { musicInfo } from '../model/musicResp'
 import { AppMusicTabbar } from '../component/AppMusicTabbar'
 import { MusicTabContent } from '../component/TabContentBuilder'
@@ -6,16 +23,36 @@ import { MusicViewModel } from '../viewmodel/MusicViewModel'
 import { downMusic } from '../utils/tools'
 import { common } from '@kit.AbilityKit'
 
+/**
+ * Index 音乐播放器主页面
+ * 应用入口页面,整合所有功能模块
+ */
 @Entry
 @ComponentV2
 struct Index {
+  // ========== 本地状态 ==========
+
+  /** 音乐视图模型,管理所有业务逻辑和状态 */
   @Local viewModel: MusicViewModel = new MusicViewModel()
+
+  /** 当前Tab索引 */
   @Local currentTab: number = 0
+
+  /** 当前播放音乐URL */
   @Local musicUrl: string = ''
+
+  /** 是否处于搜索模式 */
   @Local isSearchMode: boolean = false
 
+  // ========== 私有属性 ==========
+
+  /** UIAbility上下文,用于文件操作 */
   private context= (this.getUIContext().getHostContext())as common.UIAbilityContext
 
+  /**
+   * 页面初始化
+   * 加载音乐列表并自动播放第一首歌曲
+   */
   async aboutToAppear(): Promise<void> {
     console.log('Index aboutToAppear 开始')
     try {
