@@ -1,5 +1,5 @@
-import { musicData, musicInfo, musicList, musicResponse } from '../pages/musicResp'
-import { getMusicInfo, getMusicList } from '../utils/musicApi'
+import { musicData, musicInfo, musicList, musicResponse } from '../model/musicResp'
+import { getMusicInfo, getMusicList } from '../api/musicApi'
 
 @ObservedV2
 export class MusicViewModel {

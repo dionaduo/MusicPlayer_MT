@@ -1,4 +1,4 @@
-import { musicInfo } from './musicResp'
+import { musicInfo } from '../model/musicResp'
 import { AppMusicTabbar } from '../component/AppMusicTabbar'
 import { MusicTabContent } from '../component/TabContentBuilder'
 import { MusicListContainer } from '../component/MusicListContainer'

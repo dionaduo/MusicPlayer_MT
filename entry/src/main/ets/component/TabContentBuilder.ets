@@ -1,4 +1,4 @@
-import { musicList } from '../pages/musicResp'
+import { musicList } from '../model/musicResp'
 import { MusicListContainer } from './MusicListContainer'
 
 @ComponentV2

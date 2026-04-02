@@ -1,5 +1,5 @@
-import { request } from './request'
-import { GetMusicInfoParams, GetMusicListParams, musicData, musicList, musicResponse } from '../pages/musicResp'
+import { request } from '../utils/request'
+import { GetMusicInfoParams, GetMusicListParams, musicData, musicList, musicResponse } from '../model/musicResp'
 
 // 获取歌曲信息接口参数
 
