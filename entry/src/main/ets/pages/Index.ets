@@ -1,4 +1,4 @@
-import { musicList, musicInfo } from './musicResp'
+import { musicInfo } from './musicResp'
 import { AppMusicTabbar } from '../component/AppMusicTabbar'
 import { MusicTabContent } from '../component/TabContentBuilder'
 import { MusicListContainer } from '../component/MusicListContainer'
@@ -180,6 +180,7 @@ struct Index {
     }
   }
 
+  //歌词
   @Builder
   LyricsView() {
     Column() {
@@ -204,11 +205,11 @@ struct Index {
         ForEach(this.viewModel.currentLyricLines, (item: musicInfo, index: number) => {
           ListItem() {
             Text(item.text)
-              .fontSize(index === this.viewModel.currentLyricIndex ? 22 : 16)
+              .fontSize(index === this.viewModel.currentLyricIndex ? 20 : 16)
               .fontWeight(index === this.viewModel.currentLyricIndex ? FontWeight.Bold : FontWeight.Normal)
               .fontColor(index === this.viewModel.currentLyricIndex ? '#39c5bb' : '#666666')
               .textAlign(TextAlign.Center)
-              .width('100%')
+              .width('90%')
               .padding({ top: 8, bottom: 8 })
               .opacity(index === this.viewModel.currentLyricIndex ? 1 : 0.5)
               .animation({
@@ -223,7 +224,7 @@ struct Index {
                 duration: 300,
                 curve: Curve.EaseOut
               })
-          }
+          }.width('100%')
         }, (item: musicInfo, index: number) => index.toString())
       }
       .width('100%')

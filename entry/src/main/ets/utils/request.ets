@@ -1,14 +1,8 @@
-import axios, {
-  AxiosInstance,
-  AxiosResponse,
-  AxiosError,
-  AxiosInterceptorOptions,
-  InternalAxiosRequestConfig
-} from '@ohos/axios'
+import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from '@ohos/axios'
 
 // 创建 axios 实例
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: 'https://www.qqmp3.vip/api/',
+  baseURL: 'https://api.qqmp3.vip/api/',
   timeout: 60000,
   headers: {
     'Content-Type': 'application/json'

@@ -9,13 +9,12 @@
 - **开发语言**: ArkTS (TypeScript扩展)
 - **UI框架**: ArkUI
 - **架构模式**: MVVM (Model-View-ViewModel)
-- **状态管理**: @ObservedV2 + @Trace
-- **组件通信**: @Event + @Param
+- **状态管理**: @ObservedV2 @Trace
+- **组件通信**: @Event @Param
 
 ## 核心功能
 
 ### 1. 音乐播放功能
-
 - ✅ 播放/暂停控制
 - ✅ 上一首/下一首切换
 - ✅ 进度条显示和拖动
@@ -23,7 +22,6 @@
 - ✅ 当前播放歌曲高亮显示
 
 ### 2. 歌词功能
-
 - ✅ 歌词解析和时间轴处理
 - ✅ 歌词滚动显示
 - ✅ 当前歌词高亮
@@ -31,7 +29,6 @@
 - ✅ 歌词同步进度
 
 ### 3. 歌曲列表管理
-
 - ✅ 热门音乐列表
 - ✅ 新歌推荐列表
 - ✅ 随机播放列表
@@ -40,14 +37,12 @@
 - ✅ 列表滚动和弹性效果
 
 ### 4. 搜索功能
-
 - ✅ 关键词搜索
 - ✅ 搜索结果展示
 - ✅ 搜索结果播放
 - ✅ 搜索模式切换
 
 ### 5. 交互功能
-
 - ✅ 歌曲下载按钮
 - ✅ 收藏按钮(带状态切换)
 - ✅ 点击播放
@@ -112,132 +107,55 @@ entry/src/main/ets/
 **位置**: `entry/src/main/ets/viewmodel/MusicViewModel.ets`
 
 **核心状态**:
-
 ```typescript
-@
-Trace
-musicRes: musicResponse < musicData > // 音乐信息
-@
-Trace
-musicUrl: string // 音乐URL
-@
-Trace
-lyrics: string // 歌词文本
-@
-Trace
-currentLyricLines: Array < musicInfo > // 解析后的歌词行
-@
-Trace
-currentProgress: number // 播放进度
-@
-Trace
-currentLyricIndex: number // 当前歌词索引
-@
-Trace
-musicId: string // 当前音乐ID
+@Trace musicRes: musicResponse<musicData>      // 音乐信息
+@Trace musicUrl: string                        // 音乐URL
+@Trace lyrics: string                          // 歌词文本
+@Trace currentLyricLines: Array<musicInfo>     // 解析后的歌词行
+@Trace currentProgress: number                 // 播放进度
+@Trace currentLyricIndex: number               // 当前歌词索引
+@Trace musicId: string                         // 当前音乐ID
 
-@
-Trace
-hotMusicList: musicList[] // 热门音乐列表
-@
-Trace
-newMusicList: musicList[] // 新歌列表
-@
-Trace
-randomMusicList: musicList[] // 随机音乐列表
-@
-Trace
-searchMusicList: musicList[] // 搜索结果列表
-@
-Trace
-searchKeyword: string // 搜索关键词
+@Trace hotMusicList: musicList[]               // 热门音乐列表
+@Trace newMusicList: musicList[]               // 新歌列表
+@Trace randomMusicList: musicList[]            // 随机音乐列表
+@Trace searchMusicList: musicList[]            // 搜索结果列表
+@Trace searchKeyword: string                   // 搜索关键词
 
-@
-Trace
-showLyrics: boolean // 是否显示歌词
-@
-Trace
-collection: boolean // 收藏状态
+@Trace showLyrics: boolean                     // 是否显示歌词
+@Trace collection: boolean                     // 收藏状态
 
-@
-Trace
-isRefreshing: boolean // 刷新状态
-@
-Trace
-lastRefreshTime: number // 上次刷新时间
-@
-Trace
-refreshCount: number // 刷新计数
+@Trace isRefreshing: boolean                   // 刷新状态
+@Trace lastRefreshTime: number                 // 上次刷新时间
+@Trace refreshCount: number                    // 刷新计数
 ```
 
 **核心方法**:
-
 ```typescript
 // 音乐播放
-async
-loadMusicInfo(musicId ? : string):
-Promise < void > // 加载音乐信息
-  async
-playMusic(musicId:
-string
-)
-:
-Promise < void > // 播放音乐
-  async
-playPrevious():
-Promise < void > // 上一首
-  async
-playNext():
-Promise < void > // 下一首
+async loadMusicInfo(musicId?: string): Promise<void>  // 加载音乐信息
+async playMusic(musicId: string): Promise<void>       // 播放音乐
+async playPrevious(): Promise<void>                   // 上一首
+async playNext(): Promise<void>                       // 下一首
 
-  // 歌曲列表
-  async
-loadHotMusicList():
-Promise < void > // 加载热门音乐
-  async
-loadNewMusicList():
-Promise < void > // 加载新歌
-  async
-loadRandomMusicList():
-Promise < void > // 加载随机音乐
-  async
-searchMusic(searchKey:
-string
-)
-:
-Promise < void > // 搜索音乐
-  async
-refreshAllLists():
-Promise < void > // 刷新所有列表
+// 歌曲列表
+async loadHotMusicList(): Promise<void>               // 加载热门音乐
+async loadNewMusicList(): Promise<void>               // 加载新歌
+async loadRandomMusicList(): Promise<void>            // 加载随机音乐
+async searchMusic(searchKey: string): Promise<void>   // 搜索音乐
+async refreshAllLists(): Promise<void>                // 刷新所有列表
 
-  // 歌词处理
-  private
-parseLyrics(lrcText:
-string
-)
-:
-void // 解析歌词
-  private
-parseTime(timeStr:
-string
-)
-:
-number // 解析时间
-updateCurrentLyricIndex():
-void // 更新歌词索引
+// 歌词处理
+private parseLyrics(lrcText: string): void           // 解析歌词
+private parseTime(timeStr: string): number           // 解析时间
+updateCurrentLyricIndex(): void                      // 更新歌词索引
 
 // 播放列表
-setPlayList(list:
-musicList[], index ? : number
-)
-:
-void // 设置播放列表
+setPlayList(list: musicList[], index?: number): void // 设置播放列表
 
 // 状态切换
-toggleLyrics():
-void // 切换歌词显示
-toggleCollection():
-void // 切换收藏状态
+toggleLyrics(): void                                 // 切换歌词显示
+toggleCollection(): void                             // 切换收藏状态
 ```
 
 ### 2. MusicListItem (歌曲列表项组件)
@@ -245,28 +163,15 @@ void // 切换收藏状态
 **位置**: `entry/src/main/ets/component/MusicListItem.ets`
 
 **参数**:
-
 ```typescript
-@
-Param @
-Require
-item: musicList // 歌曲数据(必填)
-@
-Param
-index: number = 0 // 序号
-@
-Event
-onMusicClick ? : (item) => void // 点击播放回调
-@
-Event
-onDownloadClick ? : (item) => void // 下载回调
-@
-Event
-onCollectClick ? : (item) => void // 收藏回调
+@Param @Require item: musicList          // 歌曲数据(必填)
+@Param index: number = 0                  // 序号
+@Event onMusicClick?: (item) => void     // 点击播放回调
+@Event onDownloadClick?: (item) => void  // 下载回调
+@Event onCollectClick?: (item) => void   // 收藏回调
 ```
 
 **UI结构**:
-
 ```
 Row {
   [序号] [歌曲名称] [作者] [下载按钮] [收藏按钮]
@@ -278,31 +183,16 @@ Row {
 **位置**: `entry/src/main/ets/component/MusicListContainer.ets`
 
 **参数**:
-
 ```typescript
-@
-Param
-musicList: musicList[] // 歌曲列表
-@
-Param @
-Require
-isRefreshing: boolean // 刷新状态(必填)
-@
-Event
-onMusicClick ? : (item, index) => void
-@
-Event
-onDownloadClick ? : (item) => void
-@
-Event
-onCollectClick ? : (item) => void
-@
-Event
-onRefresh ? : () => void // 刷新回调
+@Param musicList: musicList[]             // 歌曲列表
+@Param @Require isRefreshing: boolean     // 刷新状态(必填)
+@Event onMusicClick?: (item, index) => void
+@Event onDownloadClick?: (item) => void
+@Event onCollectClick?: (item) => void
+@Event onRefresh?: () => void            // 刷新回调
 ```
 
 **特性**:
-
 - 使用Refresh组件支持下拉刷新
 - 使用Scroll组件实现滚动
 - 集成MusicListItem展示列表项
@@ -312,32 +202,15 @@ onRefresh ? : () => void // 刷新回调
 **位置**: `entry/src/main/ets/component/AppMusicTabbar.ets`
 
 **参数**:
-
 ```typescript
-@
-Param
-musicUrl: string // 音乐URL
-@
-Param
-lyrics: string // 歌词文本
-@
-Param
-currentSongName: string // 当前歌曲名称
-@
-Param
-currentArtist: string // 当前歌手
-@
-Event
-onLrcClick ? : () => void // 歌词按钮点击
-@
-Event
-onProgressUpdate ? : (progress) => void // 进度更新
-@
-Event
-onPreviousClick ? : () => void // 上一首
-@
-Event
-onNextClick ? : () => void // 下一首
+@Param musicUrl: string                   // 音乐URL
+@Param lyrics: string                     // 歌词文本
+@Param currentSongName: string            // 当前歌曲名称
+@Param currentArtist: string              // 当前歌手
+@Event onLrcClick?: () => void            // 歌词按钮点击
+@Event onProgressUpdate?: (progress) => void  // 进度更新
+@Event onPreviousClick?: () => void       // 上一首
+@Event onNextClick?: () => void           // 下一首
 ```
 
 ### 5. Index (主页面)
@@ -345,7 +218,6 @@ onNextClick ? : () => void // 下一首
 **位置**: `entry/src/main/ets/pages/Index.ets`
 
 **核心布局**:
-
 ```
 Stack {
   Column {
@@ -380,7 +252,7 @@ Stack {
 await viewModel.playMusic('125380')
 
 // 方式2: 设置播放列表后播放
-viewModel.setPlayList(musicList, 0) // 设置列表和索引
+viewModel.setPlayList(musicList, 0)  // 设置列表和索引
 await viewModel.playMusic(musicList[0].rid)
 ```
 
@@ -454,39 +326,17 @@ MusicListContainer({
 
 ```typescript
 // MusicViewModel.ets
-@
-Trace
-customMusicList: musicList[] = []
+@Trace customMusicList: musicList[] = []
 
-async
-loadCustomMusicList():
-Promise<
-void > {
-  try
-  {
-  const
-  response: musicResponse < musicList[] > = await getMusicList({ type: 'custom' })
-  this
-  .
-  customMusicList = response.data || []
-  console
-  .
-  log
-  (
-  '自定义列表加载成功，共',
-  this
-  .
-  customMusicList
-  .
-  length,
-  '首'
-  )
-}
-catch(e)
-{
-  console.error('加载自定义列表失败:', e)
-  this.customMusicList = []
-}
+async loadCustomMusicList(): Promise<void> {
+  try {
+    const response: musicResponse<musicList[]> = await getMusicList({ type: 'custom' })
+    this.customMusicList = response.data || []
+    console.log('自定义列表加载成功，共', this.customMusicList.length, '首')
+  } catch (e) {
+    console.error('加载自定义列表失败:', e)
+    this.customMusicList = []
+  }
 }
 ```
 
@@ -519,90 +369,21 @@ MusicTabContent({
 #### 步骤3: 在aboutToAppear中加载数据
 
 ```typescript
-async
-aboutToAppear():
-Promise<
-void > {
-  try
-  {
-  await
-  this
-  .
-  viewModel
-  .
-  loadHotMusicList()
-  await
-  this
-  .
-  viewModel
-  .
-  loadNewMusicList()
-  await
-  this
-  .
-  viewModel
-  .
-  loadRandomMusicList()
-  await
-  this
-  .
-  viewModel
-  .
-  loadCustomMusicList()  // 新增
+async aboutToAppear(): Promise<void> {
+  try {
+    await this.viewModel.loadHotMusicList()
+    await this.viewModel.loadNewMusicList()
+    await this.viewModel.loadRandomMusicList()
+    await this.viewModel.loadCustomMusicList()  // 新增
 
-  if
-  (
-  this
-  .
-  viewModel
-  .
-  hotMusicList
-  .
-  length
-  >
-  0
-  )
-  {
-  this
-  .
-  viewModel
-  .
-  setPlayList
-  (
-  this
-  .
-  viewModel
-  .
-  hotMusicList,
-  0
-  )
-  await
-  this
-  .
-  viewModel
-  .
-  playMusic
-  (
-  this
-  .
-  viewModel
-  .
-  hotMusicList
-  [
-  0
-  ]
-  .
-  rid
-  )
-  this
-  .
-  musicUrl = this.viewModel.musicUrl
-}
-}
-catch(error)
-{
-  console.error('加载失败:', error)
-}
+    if (this.viewModel.hotMusicList.length > 0) {
+      this.viewModel.setPlayList(this.viewModel.hotMusicList, 0)
+      await this.viewModel.playMusic(this.viewModel.hotMusicList[0].rid)
+      this.musicUrl = this.viewModel.musicUrl
+    }
+  } catch (error) {
+    console.error('加载失败:', error)
+  }
 }
 ```
 
@@ -611,20 +392,17 @@ catch(error)
 修改`MusicListItem.ets`的build方法:
 
 ```typescript
-build()
-{
-  Row()
-  {
+build() {
+  Row() {
     // 自定义序号样式
-    Text(`${this.index + 1}`)
+    Text(`${this.index 1}`)
       .fontSize(16)  // 修改字体大小
       .fontColor('#39c5bb')  // 修改颜色
       .width(40)
-      .fontWeight(FontWeight.Bold) // 加粗
+      .fontWeight(FontWeight.Bold)  // 加粗
 
     // 自定义歌曲信息
-    Column()
-    {
+    Column() {
       Text(this.item.name)
         .fontSize(18)  // 修改歌曲名称字体
         .fontColor('#333333')
@@ -634,23 +412,19 @@ build()
         .fontSize(14)
         .fontColor('#666666')
     }
-    .
-    layoutWeight(1)
+    .layoutWeight(1)
 
     // 自定义按钮样式
-    Row
-    ({ space: 20 })
-    { // 增加按钮间距
+    Row({ space: 20 }) {  // 增加按钮间距
       // ... 按钮代码
     }
   }
   // 自定义整体样式
-  .
-  width('100%')
-    .height(80)  // 修改高度
-    .backgroundColor('#f9f9f9')  // 添加背景色
-    .borderRadius(8)  // 添加圆角
-    .margin({ top: 5, bottom: 5 }) // 添加外边距
+  .width('100%')
+  .height(80)  // 修改高度
+  .backgroundColor('#f9f9f9')  // 添加背景色
+  .borderRadius(8)  // 添加圆角
+  .margin({ top: 5, bottom: 5 })  // 添加外边距
 }
 ```
 
@@ -661,10 +435,7 @@ build()
 在ViewModel中实现了刷新的防抖和频率限制:
 
 ```typescript
-private
-canRefresh():
-boolean
-{
+private canRefresh(): boolean {
   const now = Date.now()
 
   // 10秒防抖
@@ -690,15 +461,12 @@ boolean
 使用Refresh组件的onStateChange回调:
 
 ```typescript
-Refresh({ refreshing: this.isRefreshing })
-{
-  List()
-  {
+Refresh({ refreshing: this.isRefreshing }) {
+  List() {
     // 列表内容
   }
 }
-.
-onStateChange((refreshingStatus: RefreshStatus) => {
+.onStateChange((refreshingStatus: RefreshStatus) => {
   if (refreshingStatus === RefreshStatus.Refresh) {
     this.onRefresh?.()
   }
@@ -710,37 +478,21 @@ onStateChange((refreshingStatus: RefreshStatus) => {
 解析LRC格式歌词:
 
 ```typescript
-private
-parseLyrics(lrcText:
-string
-)
-:
-void {
-  const
-  lines = lrcText.split(/\n/)
+private parseLyrics(lrcText: string): void {
+  const lines = lrcText.split(/\n/)
 
-  lines
-  .
-  forEach
-  (
-  (
-  line
-  )
-  =>
-  {
-  const
-  match = line.match(/\[(\d+:\d+\.\d+)\](.*)/)
-  if(match) {
-    const time = this.parseTime(match[1])
-    const text = match[2].trim()
-    if (text) {
-      this.currentLyricLines.push({ time, text })
+  lines.forEach((line) => {
+    const match = line.match(/\[(\d+:\d+\.\d+)\](.*)/)
+    if (match) {
+      const time = this.parseTime(match[1])
+      const text = match[2].trim()
+      if (text) {
+        this.currentLyricLines.push({ time, text })
+      }
     }
-  }
-}
-)
+  })
 
-this.currentLyricLines.sort((a, b) => a.time - b.time)
+  this.currentLyricLines.sort((a, b) => a.time - b.time)
 }
 ```
 
@@ -749,9 +501,7 @@ this.currentLyricLines.sort((a, b) => a.time - b.time)
 使用状态变量控制搜索/Tab模式:
 
 ```typescript
-@
-Local
-isSearchMode: boolean = false
+@Local isSearchMode: boolean = false
 
 // 提交搜索时切换模式
 onSubmit(() => {
@@ -765,9 +515,7 @@ onSubmit(() => {
 if (this.isSearchMode) {
   this.SearchResultView()
 } else {
-  Tabs
-  { /* Tab内容 */
-  }
+  Tabs { /* Tab内容 */ }
 }
 ```
 
@@ -777,12 +525,9 @@ if (this.isSearchMode) {
 
 ```typescript
 // 在ViewModel中添加
-@
-Trace
-isPlaying: boolean = false
+@Trace isPlaying: boolean = false
 
-togglePlay():
-void {
+togglePlay(): void {
   this.isPlaying = !this.isPlaying
   // 实际播放/暂停逻辑
 }
@@ -792,15 +537,9 @@ void {
 
 ```typescript
 // 在ViewModel中添加
-@
-Trace
-volume: number = 50
+@Trace volume: number = 50
 
-setVolume(value:
-number
-)
-:
-void {
+setVolume(value: number): void {
   this.volume = value
   // 设置音量逻辑
 }
@@ -811,18 +550,15 @@ void {
 ```typescript
 // 在ViewModel中添加
 enum PlayMode {
-Sequence = 0, // 顺序播放
-Loop = 1, // 单曲循环
-Random = 2 // 随机播放
+  Sequence = 0,  // 顺序播放
+  Loop = 1,      // 单曲循环
+  Random = 2     // 随机播放
 }
 
-@
-Trace
-playMode: PlayMode = PlayMode.Sequence
+@Trace playMode: PlayMode = PlayMode.Sequence
 
-switchPlayMode():
-void {
-  this.playMode = (this.playMode + 1) % 3
+switchPlayMode(): void {
+  this.playMode = (this.playMode 1) % 3
 }
 ```
 
@@ -830,37 +566,13 @@ void {
 
 ```typescript
 // 在ViewModel中添加
-@
-Trace
-playHistory: musicList[] = []
+@Trace playHistory: musicList[] = []
 
-addToHistory(item:
-musicList
-)
-:
-void {
-  this
-  .
-  playHistory
-  .
-  unshift(item)
-  if
-  (
-  this
-  .
-  playHistory
-  .
-  length
-  >
-  50
-  )
-  {
-  this
-  .
-  playHistory
-  .
-  pop()
-}
+addToHistory(item: musicList): void {
+  this.playHistory.unshift(item)
+  if (this.playHistory.length > 50) {
+    this.playHistory.pop()
+  }
 }
 ```
 
@@ -870,31 +582,10 @@ void {
 // 使用Preferences API实现
 import { preferences } from '@kit.ArkData'
 
-async
-savePlayHistory():
-Promise<
-void > {
-  const
-  dataPreferences = await preferences.getPreferences(getContext(), 'musicPlayer')
-  await
-  dataPreferences
-  .
-  put
-  (
-  'playHistory',
-  JSON
-  .
-  stringify
-  (
-  this
-  .
-  playHistory
-  )
-  )
-  await
-  dataPreferences
-  .
-  flush()
+async savePlayHistory(): Promise<void> {
+  const dataPreferences = await preferences.getPreferences(getContext(), 'musicPlayer')
+  await dataPreferences.put('playHistory', JSON.stringify(this.playHistory))
+  await dataPreferences.flush()
 }
 ```
 
@@ -903,7 +594,6 @@ void > {
 ### Q1: 下拉刷新不生效?
 
 **A**: 检查以下几点:
-
 1. 确保isRefreshing状态正确更新
 2. 检查onRefresh回调是否正确实现
 3. 确认canRefresh()方法返回true
@@ -911,7 +601,6 @@ void > {
 ### Q2: 歌词不同步?
 
 **A**: 检查以下几点:
-
 1. 确保currentProgress正确更新
 2. 检查updateCurrentLyricIndex()是否被调用
 3. 验证歌词时间格式是否正确
@@ -919,7 +608,6 @@ void > {
 ### Q3: 搜索无结果?
 
 **A**: 检查以下几点:
-
 1. 确认searchKeyword不为空
 2. 检查API接口是否正常
 3. 验证搜索参数格式是否正确
@@ -927,7 +615,6 @@ void > {
 ### Q4: 播放列表切换失败?
 
 **A**: 检查以下几点:
-
 1. 确保setPlayList()被正确调用
 2. 验证currentPlayIndex在有效范围内
 3. 检查playMusic()是否传入正确的musicId
@@ -939,10 +626,8 @@ void > {
 ```typescript
 // 使用ForEach的keyGenerator
 ForEach(this.musicList, (item: musicList, index: number) => {
-  ListItem()
-  { /* ... */
-  }
-}, (item: musicList, index: number) => item.rid + index.toString())
+  ListItem() { /* ... */ }
+}, (item: musicList, index: number) => item.rid index.toString())
 ```
 
 ### 2. 图片加载优化
@@ -970,7 +655,6 @@ this.lastRefreshTime = Date.now()
 ## 总结
 
 本项目采用MVVM架构,实现了完整的音乐播放器功能,包括:
-
 - 音乐播放控制
 - 多类型歌曲列表
 - 歌词显示
