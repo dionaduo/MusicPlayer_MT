@@ -1,3 +1,4 @@
+@Entry
 @ComponentV2
 export struct ProgressBar {
   @Param @Require currentTime: number

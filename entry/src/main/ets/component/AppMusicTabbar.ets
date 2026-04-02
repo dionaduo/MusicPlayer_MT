@@ -1,7 +1,7 @@
-import { media } from "@kit.MediaKit"
-import { ConvertTime } from "../utils/tools"
-import { VolumeControl } from "./VolumeControl"
-import { avSession } from "@kit.AVSessionKit"
+import { media } from '@kit.MediaKit'
+import { ConvertTime } from '../utils/tools'
+import { VolumeControl } from './VolumeControl'
+import { avSession } from '@kit.AVSessionKit'
 
 @ComponentV2
 export struct AppMusicTabbar {
@@ -31,7 +31,6 @@ export struct AppMusicTabbar {
     console.log('AppMusicTabbar aboutToAppear 开始')
     try {
       this.avPlayer = await media.createAVPlayer()
-      console.log('AVPlayer创建成功')
       if (this.avPlayer) {
         this.setupPlayerListeners()
         console.log('播放器监听器设置完成')
@@ -52,16 +51,10 @@ export struct AppMusicTabbar {
 
   @Monitor('musicUrl')
   onMusicUrlChange(): void {
-    console.log('onMusicUrlChange 触发, musicUrl:', this.musicUrl)
     if (this.avPlayer && this.musicUrl) {
       const currentState = this.avPlayer.state
-      console.log('当前播放器状态:', currentState)
-
-      // 无论什么状态,都先重置播放器
       try {
         this.avPlayer.reset()
-        console.log('播放器已重置')
-        // 等待重置完成后再加载新音乐
         setTimeout(() => {
           if (this.avPlayer?.state === 'idle') {
             this.loadMusic()
@@ -69,7 +62,6 @@ export struct AppMusicTabbar {
         }, 100)
       } catch (error) {
         console.error('重置播放器失败:', error)
-        // 如果重置失败,尝试直接加载
         this.loadMusic()
       }
     }
@@ -156,7 +148,6 @@ export struct AppMusicTabbar {
     console.log('loadMusic 被调用, musicUrl:', this.musicUrl)
     if (this.avPlayer && this.musicUrl) {
       this.avPlayer.url = this.musicUrl
-      console.log('设置播放器URL:', this.musicUrl)
 
       setTimeout(() => {
         console.log('准备播放,当前状态:', this.avPlayer?.state)
@@ -219,10 +210,7 @@ export struct AppMusicTabbar {
           break
         case 'prepared':
           this.totalDuration = this.avPlayer!.duration
-          console.log('AVPlayer duration原始值:', this.totalDuration, '类型:', typeof this.totalDuration)
-          // AVPlayer的duration已经是秒,不需要再乘以1000
           this.durationTime = ConvertTime(this.totalDuration) // 转换为毫秒
-          console.log('歌曲准备完成,总时长(秒):', this.totalDuration, '格式化后:', this.durationTime)
           // 自动播放
           this.avPlayer?.play().catch((e: string) => console.error('自动播放失败:', e))
           break

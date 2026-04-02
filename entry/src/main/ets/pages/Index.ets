@@ -3,6 +3,8 @@ import { AppMusicTabbar } from '../component/AppMusicTabbar'
 import { MusicTabContent } from '../component/TabContentBuilder'
 import { MusicListContainer } from '../component/MusicListContainer'
 import { MusicViewModel } from '../viewmodel/MusicViewModel'
+import { downMusic } from '../utils/tools'
+import { common } from '@kit.AbilityKit'
 
 @Entry
 @ComponentV2
@@ -11,7 +13,8 @@ struct Index {
   @Local currentTab: number = 0
   @Local musicUrl: string = ''
   @Local isSearchMode: boolean = false
-  private title: string[] = ['热门', '新歌', '随机', '收藏']
+
+  private context= (this.getUIContext().getHostContext())as common.UIAbilityContext
 
   async aboutToAppear(): Promise<void> {
     console.log('Index aboutToAppear 开始')
@@ -82,8 +85,15 @@ struct Index {
                     await this.viewModel.playMusic(musicItem.rid)
                     this.musicUrl = this.viewModel.musicUrl
                   },
-                  onDownloadClick: (musicItem) => {
-                    console.log('下载歌曲:', musicItem.name)
+                  onDownloadClick: async (musicItem) => {
+                    try {
+                      await this.viewModel.playMusic(musicItem.rid);
+                      if (this.musicUrl && musicItem.name && this.context) {
+                        const success = await downMusic(this.musicUrl, musicItem.name + '.mp3', this.context);
+                      }
+                    } catch (error) {
+                      console.error('下载歌曲失败:', error);
+                    }
                   },
                   onCollectClick: (musicItem) => {
                     console.log('收藏歌曲:', musicItem.name)
@@ -91,6 +101,11 @@ struct Index {
                   onRefresh: async () => {
                     console.log('热门歌曲下拉刷新')
                     await this.viewModel.loadHotMusicList()
+                    if (this.viewModel.hotMusicList) {
+                      setTimeout(() => {
+                        this.viewModel.isRefreshing = false
+                      }, 3000)
+                    }
                   }
                 })
 
@@ -104,8 +119,18 @@ struct Index {
                     await this.viewModel.playMusic(musicItem.rid)
                     this.musicUrl = this.viewModel.musicUrl
                   },
-                  onDownloadClick: (musicItem) => {
+                  onDownloadClick: async (musicItem) => {
                     console.log('下载歌曲:', musicItem.name)
+                    try {
+                      await this.viewModel.playMusic(musicItem.rid)
+                      if (this.musicUrl && musicItem.name && this.context) {
+                        await downMusic(this.musicUrl, musicItem.name + '.mp3', this.context)
+                      } else {
+                        console.error('下载失败: musicUrl为空或context不存在')
+                      }
+                    } catch (error) {
+                      console.error('下载歌曲失败:', error)
+                    }
                   },
                   onCollectClick: (musicItem) => {
                     console.log('收藏歌曲:', musicItem.name)
@@ -113,6 +138,11 @@ struct Index {
                   onRefresh: async () => {
                     console.log('新歌下拉刷新')
                     await this.viewModel.loadNewMusicList()
+                    if (this.viewModel.newMusicList) {
+                      setTimeout(()=>{
+                        this.viewModel.isRefreshing = false
+                      },3000)
+                    }
                   }
                 })
 
@@ -126,8 +156,20 @@ struct Index {
                     await this.viewModel.playMusic(musicItem.rid)
                     this.musicUrl = this.viewModel.musicUrl
                   },
-                  onDownloadClick: (musicItem) => {
+                  onDownloadClick: async (musicItem) => {
                     console.log('下载歌曲:', musicItem.name)
+                    try {
+                      // 先加载歌曲信息获取URL
+                      await this.viewModel.playMusic(musicItem.rid)
+                      // 等待musicUrl更新
+                      if (this.musicUrl && musicItem.name && this.context) {
+                        await downMusic(this.musicUrl, musicItem.name + '.mp3', this.context)
+                      } else {
+                        console.error('下载失败: musicUrl为空或context不存在')
+                      }
+                    } catch (error) {
+                      console.error('下载歌曲失败:', error)
+                    }
                   },
                   onCollectClick: (musicItem) => {
                     console.log('收藏歌曲:', musicItem.name)
@@ -135,6 +177,11 @@ struct Index {
                   onRefresh: async () => {
                     console.log('随机歌曲下拉刷新')
                     await this.viewModel.loadRandomMusicList()
+                    if (this.viewModel.randomMusicList) {
+                      setTimeout(() => {
+                        this.viewModel.isRefreshing = false
+                      }, 3000)
+                    }
                   }
                 })
                 if (!this.viewModel.collection) {
@@ -278,8 +325,21 @@ struct Index {
             await this.viewModel.playMusic(musicItem.rid)
             this.musicUrl = this.viewModel.musicUrl
           },
-          onDownloadClick: (musicItem) => {
+          onDownloadClick: async (musicItem) => {
             console.log('下载歌曲:', musicItem.name)
+            try {
+              // 先加载歌曲信息获取URL
+              await this.viewModel.playMusic(musicItem.rid)
+              // 等待musicUrl更新
+              if (this.musicUrl && musicItem.name && this.context) {
+                console.log('开始下载:', musicItem.name)
+                await downMusic(this.musicUrl, musicItem.name + '.mp3', this.context)
+              } else {
+                console.error('下载失败: musicUrl为空或context不存在')
+              }
+            } catch (error) {
+              console.error('下载歌曲失败:', error)
+            }
           },
           onCollectClick: (musicItem) => {
             console.log('收藏歌曲:', musicItem.name)

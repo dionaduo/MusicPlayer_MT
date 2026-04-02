@@ -1,6 +1,5 @@
-import { musicData, musicResponse, musicInfo, musicList, GetMusicInfoParams } from '../pages/musicResp'
+import { musicData, musicInfo, musicList, musicResponse } from '../pages/musicResp'
 import { getMusicInfo, getMusicList } from '../utils/musicApi'
-import { ExtraRegionPosition, LengthMetrics, LengthUnit } from '@kit.ArkUI'
 
 @ObservedV2
 export class MusicViewModel {
@@ -51,7 +50,6 @@ export class MusicViewModel {
       this.parseLyrics(this.lyrics)
       this.musicUrl = this.musicRes.data.url
       this.resetLyricIndex() // 重置歌词索引
-      console.log('ViewModel 歌曲信息加载成功, musicUrl:', this.musicUrl)
     } catch (error) {
       console.error('ViewModel 加载歌曲信息失败:', error)
     }
@@ -252,4 +250,6 @@ export class MusicViewModel {
 
     return true
   }
+
+
 }

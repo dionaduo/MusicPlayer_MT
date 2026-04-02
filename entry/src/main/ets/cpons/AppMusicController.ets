@@ -2,8 +2,8 @@ import { media } from '@kit.MediaKit'
 import { ConvertTime } from '../utils/tools'
 import { ProgressBar } from './ProgressBar'
 import { PlaybackControls } from './PlaybackControls'
-import { VolumeControl } from './VolumeControl'
-import { SpeedMenu } from './SpeedMenu'
+import { VolumeControl } from '../component/VolumeControl'
+import { SpeedMenu } from '../component/SpeedMenu'
 import { FunctionButtons } from './FunctionButtons'
 
 @Entry

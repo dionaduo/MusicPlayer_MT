@@ -11,6 +11,10 @@
     {
       "name": "EntryAbility_label",
       "value": "label"
+    },
+    {
+      "name": "media_reason",
+      "value": "访问权限"
     }
   ]
 }
