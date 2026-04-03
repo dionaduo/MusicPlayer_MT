@@ -30,6 +30,7 @@ import { common } from '@kit.AbilityKit'
 @Entry
 @ComponentV2
 struct Index {
+
   // ========== 本地状态 ==========
 
   /** 音乐视图模型,管理所有业务逻辑和状态 */
@@ -44,6 +45,9 @@ struct Index {
   /** 是否处于搜索模式 */
   @Local isSearchMode: boolean = false
 
+  /** 是否启用自动播放标志 */
+  @Local enableAutoPlayFlag: boolean = false
+
   // ========== 私有属性 ==========
 
   /** UIAbility上下文,用于文件操作 */
@@ -51,7 +55,7 @@ struct Index {
 
   /**
    * 页面初始化
-   * 加载音乐列表并自动播放第一首歌曲
+   * 加载音乐列表但不自动播放
    */
   async aboutToAppear(): Promise<void> {
     console.log('Index aboutToAppear 开始')
@@ -61,9 +65,10 @@ struct Index {
       await this.viewModel.loadNewMusicList()
       await this.viewModel.loadRandomMusicList()
 
-      // 设置播放列表为热门音乐，并播放第一首
+      // 设置播放列表为热门音乐，但不自动播放
       if (this.viewModel.hotMusicList.length > 0) {
         this.viewModel.setPlayList(this.viewModel.hotMusicList, 0)
+        // 只加载歌曲信息，不自动播放
         await this.viewModel.playMusic(this.viewModel.hotMusicList[0].rid)
         this.musicUrl = this.viewModel.musicUrl
       }
@@ -103,8 +108,7 @@ struct Index {
             .padding({
               left: 10,
               right: 10,
-              top: 10,
-              bottom: 10
+              top: 20,
             })
 
             // 搜索结果或Tabs
@@ -121,6 +125,8 @@ struct Index {
                     this.viewModel.setPlayList(this.viewModel.hotMusicList, index)
                     await this.viewModel.playMusic(musicItem.rid)
                     this.musicUrl = this.viewModel.musicUrl
+                    // 点击歌曲时启用自动播放标志
+                    this.enableAutoPlayFlag = true
                   },
                   onDownloadClick: async (musicItem) => {
                     try {
@@ -137,12 +143,11 @@ struct Index {
                   },
                   onRefresh: async () => {
                     console.log('热门歌曲下拉刷新')
+                    this.viewModel.isRefreshing = true
+                    setTimeout(() => {
+                      this.viewModel.isRefreshing = false
+                    }, 3000)
                     await this.viewModel.loadHotMusicList()
-                    if (this.viewModel.hotMusicList) {
-                      setTimeout(() => {
-                        this.viewModel.isRefreshing = false
-                      }, 3000)
-                    }
                   }
                 })
 
@@ -155,6 +160,7 @@ struct Index {
                     this.viewModel.setPlayList(this.viewModel.newMusicList, index)
                     await this.viewModel.playMusic(musicItem.rid)
                     this.musicUrl = this.viewModel.musicUrl
+                    this.enableAutoPlayFlag = true
                   },
                   onDownloadClick: async (musicItem) => {
                     console.log('下载歌曲:', musicItem.name)
@@ -174,12 +180,11 @@ struct Index {
                   },
                   onRefresh: async () => {
                     console.log('新歌下拉刷新')
+                    this.viewModel.isRefreshing = true
+                    setTimeout(() => {
+                      this.viewModel.isRefreshing = false
+                    }, 3000)
                     await this.viewModel.loadNewMusicList()
-                    if (this.viewModel.newMusicList) {
-                      setTimeout(()=>{
-                        this.viewModel.isRefreshing = false
-                      },3000)
-                    }
                   }
                 })
 
@@ -192,6 +197,7 @@ struct Index {
                     this.viewModel.setPlayList(this.viewModel.randomMusicList, index)
                     await this.viewModel.playMusic(musicItem.rid)
                     this.musicUrl = this.viewModel.musicUrl
+                    this.enableAutoPlayFlag = true
                   },
                   onDownloadClick: async (musicItem) => {
                     console.log('下载歌曲:', musicItem.name)
@@ -213,12 +219,11 @@ struct Index {
                   },
                   onRefresh: async () => {
                     console.log('随机歌曲下拉刷新')
+                    this.viewModel.isRefreshing = true
+                    setTimeout(() => {
+                      this.viewModel.isRefreshing = false
+                    }, 3000)
                     await this.viewModel.loadRandomMusicList()
-                    if (this.viewModel.randomMusicList) {
-                      setTimeout(() => {
-                        this.viewModel.isRefreshing = false
-                      }, 3000)
-                    }
                   }
                 })
                 if (!this.viewModel.collection) {
@@ -239,8 +244,9 @@ struct Index {
           AppMusicTabbar({
             musicUrl: this.musicUrl,
             lyrics: this.viewModel.lyrics,
-            currentSongName: this.viewModel.musicRes.data?.url ? '正在播放' : '',
-            currentArtist: '',
+            currentSongName: this.viewModel.currentPlayList[this.viewModel.currentPlayIndex]?.name || '',
+            currentArtist: this.viewModel.currentPlayList[this.viewModel.currentPlayIndex]?.artist || '',
+            autoPlayEnabled: this.enableAutoPlayFlag,
             onLrcClick: () => this.viewModel.toggleLyrics(),
             onProgressUpdate: (progress: number) => {
               this.viewModel.currentProgress = progress
@@ -249,10 +255,15 @@ struct Index {
             onPreviousClick: async () => {
               await this.viewModel.playPrevious()
               this.musicUrl = this.viewModel.musicUrl
+              this.enableAutoPlayFlag = true
             },
             onNextClick: async () => {
               await this.viewModel.playNext()
               this.musicUrl = this.viewModel.musicUrl
+              this.enableAutoPlayFlag = true
+            },
+            onPlayClick: () => {
+              this.enableAutoPlayFlag = true
             }
           })
         }
@@ -318,6 +329,7 @@ struct Index {
       .edgeEffect(EdgeEffect.None)
       .alignListItem(ListItemAlign.Center)
     }
+    .padding({top:20})
     .width('100%')
     .layoutWeight(1)
     .backgroundColor('#ffffffff')
@@ -361,6 +373,7 @@ struct Index {
             this.viewModel.setPlayList(this.viewModel.searchMusicList, index)
             await this.viewModel.playMusic(musicItem.rid)
             this.musicUrl = this.viewModel.musicUrl
+            this.enableAutoPlayFlag = true
           },
           onDownloadClick: async (musicItem) => {
             console.log('下载歌曲:', musicItem.name)

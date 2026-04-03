@@ -42,6 +42,9 @@ export struct AppMusicTabbar {
   /** 当前歌手名称 */
   @Param currentArtist: string = ''
 
+  /** 是否启用自动播放 */
+  @Param autoPlayEnabled: boolean = false
+
   // ========== 本地状态 ==========
 
   /** 当前音量,范围0-1 */
@@ -87,6 +90,9 @@ export struct AppMusicTabbar {
 
   /** 播放列表按钮点击回调 */
   @Event onPlaylistClick?: () => void
+
+  /** 播放按钮点击回调 */
+  @Event onPlayClick?: () => void
 
   // ========== 常量 ==========
 
@@ -136,7 +142,6 @@ export struct AppMusicTabbar {
   @Monitor('musicUrl')
   onMusicUrlChange(): void {
     if (this.avPlayer && this.musicUrl) {
-      const currentState = this.avPlayer.state
       try {
         this.avPlayer.reset()
         setTimeout(() => {
@@ -173,6 +178,18 @@ export struct AppMusicTabbar {
           .onChange((time: number) => this.avPlayer?.seek(time))
       }.height(10)
       .padding({ bottom: 5 })
+
+      // 歌曲信息显示
+      Row() {
+        Text(`${this.currentSongName} - ${this.currentArtist}`)
+          .fontSize(14)
+          .fontColor('#333333')
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .height(18)
+      .width('90%')
+      .justifyContent(FlexAlign.Center)
 
       // 控制按钮区域
       Row() {
@@ -227,31 +244,40 @@ export struct AppMusicTabbar {
       }
       .backgroundColor(Color.White)
       .height('100%')
-      .alignItems(VerticalAlign.Center)
+      .padding({top:8})
+      .alignItems(VerticalAlign.Top)
+      .justifyContent(FlexAlign.Start)
     }
-    .zIndex(999)
     .backgroundColor(Color.White)
     .justifyContent(FlexAlign.SpaceBetween)
-    .backgroundColor(Color.Transparent)
     .width('100%')
     .height('100%')
   }
 
   /**
    * 加载音乐
-   * 设置播放器URL并准备播放
+   * 设置播放器URL并准备播放,根据autoPlayEnabled决定是否自动播放
    */
   private loadMusic(): void {
-    console.log('loadMusic 被调用, musicUrl:', this.musicUrl)
+    console.log('loadMusic 被调用, musicUrl:', this.musicUrl, 'autoPlayEnabled:', this.autoPlayEnabled)
     if (this.avPlayer && this.musicUrl) {
       this.avPlayer.url = this.musicUrl
 
       setTimeout(() => {
-        console.log('准备播放,当前状态:', this.avPlayer?.state)
         if (this.avPlayer?.state === 'initialized') {
-          this.avPlayer.prepare().catch((e: string) => console.error('准备播放失败: ', e))
+          this.avPlayer.prepare().then(() => {
+            // 根据标志决定是否自动播放
+            if (this.autoPlayEnabled) {
+              this.avPlayer?.play().catch((e: string) => console.error('自动播放失败:', e))
+            }
+          }).catch((e: string) => console.error('准备播放失败: ', e))
         } else {
-          this.avPlayer?.prepare().catch((e: string) => console.error('准备播放失败: ', e))
+          this.avPlayer?.prepare().then(() => {
+            // 根据标志决定是否自动播放
+            if (this.autoPlayEnabled) {
+              this.avPlayer?.play().catch((e: string) => console.error('自动播放失败:', e))
+            }
+          }).catch((e: string) => console.error('准备播放失败: ', e))
         }
       }, 100)
     }
@@ -314,15 +340,18 @@ export struct AppMusicTabbar {
         case 'prepared':
           this.totalDuration = this.avPlayer!.duration
           this.durationTime = ConvertTime(this.totalDuration)
-          // 自动播放
-          this.avPlayer?.play().catch((e: string) => console.error('自动播放失败:', e))
+          // 不自动播放,等待用户点击播放按钮或歌曲
           break
         case 'playing':
           this.isPlaying = true
           break
         case 'paused':
+          this.isPlaying = false
+          break
         case 'completed':
           this.isPlaying = false
+          // 音乐播放完毕,自动播放下一首
+          this.onNextClick?.()
           break
         case 'error':
           console.error('播放失败: ', state)
@@ -383,6 +412,7 @@ export struct AppMusicTabbar {
     } else {
       this.avPlayer?.play()
       console.log('开始播放')
+      this.onPlayClick?.()
     }
   }
 

@@ -352,6 +352,11 @@ export class MusicViewModel {
     this.refreshCount++
     this.lastRefreshTime = Date.now()
 
+    // 3秒后自动重置刷新状态，不管数据是否加载成功
+    setTimeout(() => {
+      this.isRefreshing = false
+    }, 3000)
+
     try {
       // 串行加载，避免并发请求
       await this.loadHotMusicList()
@@ -359,8 +364,6 @@ export class MusicViewModel {
       await this.loadRandomMusicList()
     } catch (error) {
       console.error('刷新失败:', error)
-    } finally {
-      this.isRefreshing = false
     }
   }
 }

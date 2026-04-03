@@ -74,9 +74,6 @@ export struct MusicListContainer {
       .onStateChange((refreshingStatus: RefreshStatus) => {
         if (refreshingStatus === RefreshStatus.Refresh) {
           this.onRefresh?.()
-          if (this.musicList) {
-            !this.isRefreshing
-          }
         }
       })
     }

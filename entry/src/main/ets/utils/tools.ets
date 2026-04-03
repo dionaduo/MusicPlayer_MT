@@ -113,7 +113,6 @@ export const downMusic = async (url: string, fileName: string, context: common.U
     // 1. 下载到沙箱缓存目录
     sandboxPath = `${context.cacheDir}/${fileName}`;
     const downloadTask = await request.downloadFile(context, { url, filePath: sandboxPath });
-    console.log('下载任务创建成功, taskId:', JSON.stringify(downloadTask));
     await showToast('正在下载中,请稍后.....')
 
     // 等待下载完成
