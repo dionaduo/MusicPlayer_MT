@@ -27,6 +27,9 @@ export struct MusicListContainer {
   /** 歌曲列表数据 */
   @Param musicList: musicList[] = []
 
+  /** 收藏列表(用于判断歌曲是否已收藏) */
+  @Param collectMusic: musicList[] = []
+
   /** 刷新状态,必填参数 */
   @Param @Require isRefreshing: boolean
 
@@ -51,25 +54,28 @@ export struct MusicListContainer {
   build() {
     Scroll() {
       Refresh({ refreshing: this.isRefreshing }) {
-        List() {
-          ForEach(this.musicList, (item: musicList, index: number) => {
-            ListItem() {
-              MusicListItem({
-                item: item,
-                index: index,
-                onMusicClick: (musicItem) => {
-                  this.onMusicClick?.(musicItem, index)
-                },
-                onDownloadClick: (musicItem) => {
-                  this.onDownloadClick?.(musicItem)
-                },
-                onCollectClick: (musicItem) => {
-                  this.onCollectClick?.(musicItem)
-                }
-              })
-            }
-          }, (item: musicList, index: number) => item.rid + index.toString())
-        }.height('100%').padding({ bottom: 10 })
+          List() {
+            ForEach(this.musicList, (item: musicList, index: number) => {
+              ListItem() {
+                MusicListItem({
+                  item: item,
+                  index: index,
+                  isCollected: this.collectMusic.some(m => m.rid === item.rid),
+                  onMusicClick: (musicItem) => {
+                    this.onMusicClick?.(musicItem, index)
+                  },
+                  onDownloadClick: (musicItem) => {
+                    this.onDownloadClick?.(musicItem)
+                  },
+                  onCollectClick: (musicItem) => {
+                    this.onCollectClick?.(musicItem)
+                  }
+                })
+              }
+            }, (item: musicList, index: number) => item.rid + index.toString())
+          }
+          .scrollBar(BarState.Off)
+          .height('100%').padding({ bottom: 10 })
       }
       .onStateChange((refreshingStatus: RefreshStatus) => {
         if (refreshingStatus === RefreshStatus.Refresh) {

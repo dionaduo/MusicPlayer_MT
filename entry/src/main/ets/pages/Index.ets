@@ -15,13 +15,16 @@
  * - MVVM架构设计
  */
 
-import { musicInfo } from '../model/musicResp'
+import { musicList } from '../model/musicResp'
 import { AppMusicTabbar } from '../component/AppMusicTabbar'
 import { MusicTabContent } from '../component/TabContentBuilder'
 import { MusicListContainer } from '../component/MusicListContainer'
 import { MusicViewModel } from '../viewmodel/MusicViewModel'
-import { downMusic } from '../utils/tools'
+import { downMusic, showToast } from '../utils/tools'
 import { common } from '@kit.AbilityKit'
+import { preferenceUtil } from '../utils/KVDatabaseUtil'
+import { router } from '@kit.ArkUI'
+import { MusicGlobalState } from '../utils/MusicGlobalState'
 
 /**
  * Index 音乐播放器主页面
@@ -30,6 +33,7 @@ import { common } from '@kit.AbilityKit'
 @Entry
 @ComponentV2
 struct Index {
+
 
   // ========== 本地状态 ==========
 
@@ -48,6 +52,10 @@ struct Index {
   /** 是否启用自动播放标志 */
   @Local enableAutoPlayFlag: boolean = false
 
+  /** 全局音乐状态 */
+  private globalState: MusicGlobalState = MusicGlobalState.getInstance()
+
+
   // ========== 私有属性 ==========
 
   /** UIAbility上下文,用于文件操作 */
@@ -60,6 +68,9 @@ struct Index {
   async aboutToAppear(): Promise<void> {
     console.log('Index aboutToAppear 开始')
     try {
+      // 初始化持久化数据库
+      preferenceUtil.init()
+
       // 串行加载列表，避免并发请求
       await this.viewModel.loadHotMusicList()
       await this.viewModel.loadNewMusicList()
@@ -71,287 +82,70 @@ struct Index {
         // 只加载歌曲信息，不自动播放
         await this.viewModel.playMusic(this.viewModel.hotMusicList[0].rid)
         this.musicUrl = this.viewModel.musicUrl
+        // 同步到全局状态
+        this.globalState.setPlayList(this.viewModel.hotMusicList, 0)
+        this.globalState.setLyricLines(this.viewModel.currentLyricLines)
       }
+
+      // 加载收藏列表
+      this.loadCollectMusicList()
     } catch (error) {
       console.error('Index aboutToAppear 加载失败:', error)
     }
   }
 
-  build() {
-    Stack() {
-      Column() {
-        if (this.viewModel.showLyrics) {
-          this.LyricsView()
-        } else {
-          Column() {
-            // 搜索栏
-            Row() {
-              Search({ placeholder: '搜索音乐' })
-                .searchButton('搜索')
-                .backgroundColor('#f5f5f5')
-                .placeholderColor('#999999')
-                .textFont({ size: 14 })
-                .height(40)
-                .width('100%')
-                .onChange((value: string) => {
-                  this.viewModel.searchKeyword = value
-                })
-                .onSubmit(() => {
-                  console.log('搜索关键词:', this.viewModel.searchKeyword)
-                  if (this.viewModel.searchKeyword.trim()) {
-                    this.isSearchMode = true
-                    this.viewModel.searchMusic(this.viewModel.searchKeyword)
-                  }
-                })
-            }
-            .width('100%')
-            .padding({
-              left: 10,
-              right: 10,
-              top: 20,
-            })
+  /**
+   * 加载收藏列表
+   * 从preferences中读取收藏的rid列表，然后获取对应的歌曲信息
+   */
+  loadCollectMusicList(): void {
+    try {
+      const ridList = preferenceUtil.getCollectRidList()
+      const collectMusic: musicList[] = []
 
-            // 搜索结果或Tabs
-            if (this.isSearchMode && this.viewModel.searchKeyword.length > 0) {
-              this.SearchResultView()
-            } else {
-              Tabs({ barPosition: BarPosition.Start }) {
-                // 热门音乐
-                MusicTabContent({
-                  tabTitle: '热门',
-                  musicList: this.viewModel.hotMusicList,
-                  isRefreshing: this.viewModel.isRefreshing,
-                  onMusicClick: async (musicItem, index) => {
-                    this.viewModel.setPlayList(this.viewModel.hotMusicList, index)
-                    await this.viewModel.playMusic(musicItem.rid)
-                    this.musicUrl = this.viewModel.musicUrl
-                    // 点击歌曲时启用自动播放标志
-                    this.enableAutoPlayFlag = true
-                  },
-                  onDownloadClick: async (musicItem) => {
-                    try {
-                      await this.viewModel.playMusic(musicItem.rid);
-                      if (this.musicUrl && musicItem.name && this.context) {
-                        const success = await downMusic(this.musicUrl, musicItem.name + '.mp3', this.context);
-                      }
-                    } catch (error) {
-                      console.error('下载歌曲失败:', error);
-                    }
-                  },
-                  onCollectClick: (musicItem) => {
-                    console.log('收藏歌曲:', musicItem.name)
-                  },
-                  onRefresh: async () => {
-                    console.log('热门歌曲下拉刷新')
-                    this.viewModel.isRefreshing = true
-                    setTimeout(() => {
-                      this.viewModel.isRefreshing = false
-                    }, 3000)
-                    await this.viewModel.loadHotMusicList()
-                  }
-                })
-
-                // 新歌
-                MusicTabContent({
-                  tabTitle: '新歌',
-                  musicList: this.viewModel.newMusicList,
-                  isRefreshing: this.viewModel.isRefreshing,
-                  onMusicClick: async (musicItem, index) => {
-                    this.viewModel.setPlayList(this.viewModel.newMusicList, index)
-                    await this.viewModel.playMusic(musicItem.rid)
-                    this.musicUrl = this.viewModel.musicUrl
-                    this.enableAutoPlayFlag = true
-                  },
-                  onDownloadClick: async (musicItem) => {
-                    console.log('下载歌曲:', musicItem.name)
-                    try {
-                      await this.viewModel.playMusic(musicItem.rid)
-                      if (this.musicUrl && musicItem.name && this.context) {
-                        await downMusic(this.musicUrl, musicItem.name + '.mp3', this.context)
-                      } else {
-                        console.error('下载失败: musicUrl为空或context不存在')
-                      }
-                    } catch (error) {
-                      console.error('下载歌曲失败:', error)
-                    }
-                  },
-                  onCollectClick: (musicItem) => {
-                    console.log('收藏歌曲:', musicItem.name)
-                  },
-                  onRefresh: async () => {
-                    console.log('新歌下拉刷新')
-                    this.viewModel.isRefreshing = true
-                    setTimeout(() => {
-                      this.viewModel.isRefreshing = false
-                    }, 3000)
-                    await this.viewModel.loadNewMusicList()
-                  }
-                })
-
-                // 随机
-                MusicTabContent({
-                  tabTitle: '随机',
-                  musicList: this.viewModel.randomMusicList,
-                  isRefreshing: this.viewModel.isRefreshing,
-                  onMusicClick: async (musicItem, index) => {
-                    this.viewModel.setPlayList(this.viewModel.randomMusicList, index)
-                    await this.viewModel.playMusic(musicItem.rid)
-                    this.musicUrl = this.viewModel.musicUrl
-                    this.enableAutoPlayFlag = true
-                  },
-                  onDownloadClick: async (musicItem) => {
-                    console.log('下载歌曲:', musicItem.name)
-                    try {
-                      // 先加载歌曲信息获取URL
-                      await this.viewModel.playMusic(musicItem.rid)
-                      // 等待musicUrl更新
-                      if (this.musicUrl && musicItem.name && this.context) {
-                        await downMusic(this.musicUrl, musicItem.name + '.mp3', this.context)
-                      } else {
-                        console.error('下载失败: musicUrl为空或context不存在')
-                      }
-                    } catch (error) {
-                      console.error('下载歌曲失败:', error)
-                    }
-                  },
-                  onCollectClick: (musicItem) => {
-                    console.log('收藏歌曲:', musicItem.name)
-                  },
-                  onRefresh: async () => {
-                    console.log('随机歌曲下拉刷新')
-                    this.viewModel.isRefreshing = true
-                    setTimeout(() => {
-                      this.viewModel.isRefreshing = false
-                    }, 3000)
-                    await this.viewModel.loadRandomMusicList()
-                  }
-                })
-                if (!this.viewModel.collection) {
-                  TabContent() {
-                    this.CollectionView()
-                  }
-                  .tabBar('收藏')
-                }
-              }
-              .layoutWeight(1)
-              .barHeight(40)
-            }
-          }
-          .layoutWeight(1)
+      ridList.forEach(rid => {
+        const collectKey = `musicCollectData${rid}`
+        const musicItem = preferenceUtil.get(collectKey) as musicList
+        if (musicItem && musicItem.rid) {
+          collectMusic.push(musicItem)
         }
+      })
 
-        Row() {
-          AppMusicTabbar({
-            musicUrl: this.musicUrl,
-            lyrics: this.viewModel.lyrics,
-            currentSongName: this.viewModel.currentPlayList[this.viewModel.currentPlayIndex]?.name || '',
-            currentArtist: this.viewModel.currentPlayList[this.viewModel.currentPlayIndex]?.artist || '',
-            autoPlayEnabled: this.enableAutoPlayFlag,
-            onLrcClick: () => this.viewModel.toggleLyrics(),
-            onProgressUpdate: (progress: number) => {
-              this.viewModel.currentProgress = progress
-              this.viewModel.updateCurrentLyricIndex()
-            },
-            onPreviousClick: async () => {
-              await this.viewModel.playPrevious()
-              this.musicUrl = this.viewModel.musicUrl
-              this.enableAutoPlayFlag = true
-            },
-            onNextClick: async () => {
-              await this.viewModel.playNext()
-              this.musicUrl = this.viewModel.musicUrl
-              this.enableAutoPlayFlag = true
-            },
-            onPlayClick: () => {
-              this.enableAutoPlayFlag = true
-            }
-          })
+      this.viewModel.collectMusic = collectMusic
+      console.log('收藏列表加载成功，共', collectMusic.length, '首')
+    } catch (error) {
+      console.error('加载收藏列表失败:', error)
+      this.viewModel.collectMusic = []
+    }
+  }
+
+  /**
+   * 歌词按钮点击事件
+   * 跳转到歌词页面
+   */
+  onLrcClick(): void {
+    try {
+      console.log('准备跳转到歌词页面,当前数据:', {
+        playListLength: this.viewModel.currentPlayList.length,
+        playIndex: this.viewModel.currentPlayIndex,
+        lyricLinesLength: this.viewModel.currentLyricLines.length,
+        lyricIndex: this.viewModel.currentLyricIndex
+      })
+
+      router.pushUrl({
+        url: 'pages/LyricsV2',
+        params: {
+          currentPlayList: this.viewModel.currentPlayList,
+          currentPlayIndex: this.viewModel.currentPlayIndex,
+          currentLyricLines: this.viewModel.currentLyricLines,
+          currentLyricIndex: this.viewModel.currentLyricIndex
         }
-        .width('100%')
-        .height('10%')
-      }
-      .width('100%')
-      .height('100%')
+      }, router.RouterMode.Standard)
+    } catch (error) {
+      console.error('跳转到歌词页面失败:', error)
     }
   }
 
-  //歌词
-  @Builder
-  LyricsView() {
-    Column() {
-      // 歌曲信息
-      Column() {
-        Text(this.viewModel.currentPlayList[this.viewModel.currentPlayIndex]?.name || '')
-          .fontSize(20)
-          .fontWeight(FontWeight.Bold)
-          .fontColor('#333333')
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Text(this.viewModel.currentPlayList[this.viewModel.currentPlayIndex]?.artist || '')
-          .fontSize(14)
-          .fontColor('#666666')
-          .margin({ top: 4 })
-      }
-      .width('100%')
-      .alignItems(HorizontalAlign.Center)
-      .margin({ top: 20, bottom: 20 })
-
-      List({ scroller: this.viewModel.scroller }) {
-        ForEach(this.viewModel.currentLyricLines, (item: musicInfo, index: number) => {
-          ListItem() {
-            Text(item.text)
-              .fontSize(index === this.viewModel.currentLyricIndex ? 20 : 16)
-              .fontWeight(index === this.viewModel.currentLyricIndex ? FontWeight.Bold : FontWeight.Normal)
-              .fontColor(index === this.viewModel.currentLyricIndex ? '#39c5bb' : '#666666')
-              .textAlign(TextAlign.Center)
-              .width('90%')
-              .padding({ top: 8, bottom: 8 })
-              .opacity(index === this.viewModel.currentLyricIndex ? 1 : 0.5)
-              .animation({
-                duration: 300,
-                curve: Curve.EaseInOut
-              })
-              .scale({
-                x: index === this.viewModel.currentLyricIndex ? 1.1 : 1,
-                y: index === this.viewModel.currentLyricIndex ? 1.1 : 1
-              })
-              .animation({
-                duration: 300,
-                curve: Curve.EaseOut
-              })
-          }.width('100%')
-        }, (item: musicInfo, index: number) => index.toString())
-      }
-      .width('100%')
-      .layoutWeight(1)
-      .backgroundColor(Color.Transparent)
-      .scrollBar(BarState.Off)
-      .edgeEffect(EdgeEffect.None)
-      .alignListItem(ListItemAlign.Center)
-    }
-    .padding({top:20})
-    .width('100%')
-    .layoutWeight(1)
-    .backgroundColor('#ffffffff')
-  }
-
-  @Builder
-  CollectionView() {
-    Column() {
-      Text('我的收藏')
-        .fontSize(20)
-        .fontWeight(FontWeight.Bold)
-        .margin({ top: 20, bottom: 20 })
-        .fontColor('#333333')
-
-      Text('暂无收藏歌曲')
-        .fontSize(16)
-        .fontColor('#999999')
-    }
-    .width('100%')
-    .height('100%')
-    .justifyContent(FlexAlign.Center)
-  }
 
   @Builder
   SearchResultView() {
@@ -368,12 +162,16 @@ struct Index {
       } else {
         MusicListContainer({
           musicList: this.viewModel.searchMusicList,
+          collectMusic: this.viewModel.collectMusic,
           isRefreshing: false,
           onMusicClick: async (musicItem, index) => {
             this.viewModel.setPlayList(this.viewModel.searchMusicList, index)
             await this.viewModel.playMusic(musicItem.rid)
             this.musicUrl = this.viewModel.musicUrl
             this.enableAutoPlayFlag = true
+            // 同步到全局状态
+            this.globalState.setPlayList(this.viewModel.searchMusicList, index)
+            this.globalState.setLyricLines(this.viewModel.currentLyricLines)
           },
           onDownloadClick: async (musicItem) => {
             console.log('下载歌曲:', musicItem.name)
@@ -393,6 +191,20 @@ struct Index {
           },
           onCollectClick: (musicItem) => {
             console.log('收藏歌曲:', musicItem.name)
+            const collectKey = `musicCollectData${musicItem.rid}`
+            const existingData = preferenceUtil.get(collectKey) as musicList
+
+            if (existingData && existingData.rid === musicItem.rid) {
+              // 已收藏，执行取消收藏
+              preferenceUtil.delete(collectKey)
+              showToast('取消收藏')
+            } else {
+              // 未收藏，执行收藏
+              preferenceUtil.put(collectKey, musicItem)
+              showToast('收藏成功')
+            }
+            // 重新加载收藏列表
+            this.loadCollectMusicList()
           },
           onRefresh: () => {
             // 搜索结果不需要下拉刷新
@@ -402,5 +214,313 @@ struct Index {
     }
     .width('100%')
     .layoutWeight(1)
+  }
+
+  build() {
+    Stack() {
+      Column() {
+        Column() {
+          // 搜索栏
+          Row() {
+            Search({ placeholder: '搜索音乐' })
+              .searchButton('搜索')
+              .backgroundColor('#f5f5f5')
+              .placeholderColor('#999999')
+              .textFont({ size: 14 })
+              .height(40)
+              .width('100%')
+              .onChange((value: string) => {
+                this.viewModel.searchKeyword = value
+              })
+              .onSubmit(() => {
+                console.log('搜索关键词:', this.viewModel.searchKeyword)
+                if (this.viewModel.searchKeyword.trim()) {
+                  this.isSearchMode = true
+                  this.viewModel.searchMusic(this.viewModel.searchKeyword)
+                }
+              })
+          }
+          .width('100%')
+          .padding({
+            left: 10,
+            right: 10,
+            top: 20,
+          })
+
+          // 搜索结果或Tabs
+          if (this.isSearchMode && this.viewModel.searchKeyword.length > 0) {
+            this.SearchResultView()
+          } else {
+            Tabs({ barPosition: BarPosition.Start }) {
+              // 热门音乐
+              MusicTabContent({
+                tabTitle: '热门',
+                musicList: this.viewModel.hotMusicList,
+                collectMusic: this.viewModel.collectMusic,
+                isRefreshing: this.viewModel.isRefreshing,
+                onMusicClick: async (musicItem, index) => {
+                  this.viewModel.setPlayList(this.viewModel.hotMusicList, index)
+                  await this.viewModel.playMusic(musicItem.rid)
+                  this.musicUrl = this.viewModel.musicUrl
+                  // 点击歌曲时启用自动播放标志
+                  this.enableAutoPlayFlag = true
+                  // 同步到全局状态
+                  this.globalState.setPlayList(this.viewModel.hotMusicList, index)
+                  this.globalState.setLyricLines(this.viewModel.currentLyricLines)
+                },
+                onDownloadClick: async (musicItem) => {
+                  try {
+                    await this.viewModel.playMusic(musicItem.rid);
+                    if (this.musicUrl && musicItem.name && this.context) {
+                      await downMusic(this.musicUrl, musicItem.name + '.mp3', this.context);
+                    }
+                  } catch (error) {
+                    console.error('下载歌曲失败:', error);
+                  }
+                },
+                onCollectClick: (musicItem) => {
+                  console.log('收藏歌曲:', musicItem.name)
+                  const collectKey = `musicCollectData${musicItem.rid}`
+                  const existingData = preferenceUtil.get(collectKey) as musicList
+
+                  if (existingData && existingData.rid === musicItem.rid) {
+                    // 已收藏，执行取消收藏
+                    preferenceUtil.delete(collectKey)
+                    preferenceUtil.removeCollectRid(musicItem.rid)
+                    showToast('取消收藏')
+                  } else {
+                    // 未收藏，执行收藏
+                    preferenceUtil.put(collectKey, musicItem)
+                    preferenceUtil.addCollectRid(musicItem.rid)
+                    showToast('收藏成功')
+                  }
+                  // 重新加载收藏列表
+                  this.loadCollectMusicList()
+                },
+                onRefresh: async () => {
+                  console.log('热门歌曲下拉刷新')
+                  this.viewModel.isRefreshing = true
+                  setTimeout(() => {
+                    this.viewModel.isRefreshing = false
+                  }, 3000)
+                  await this.viewModel.loadHotMusicList()
+                }
+              })
+
+              // 新歌
+              MusicTabContent({
+                tabTitle: '新歌',
+                musicList: this.viewModel.newMusicList,
+                collectMusic: this.viewModel.collectMusic,
+                isRefreshing: this.viewModel.isRefreshing,
+                onMusicClick: async (musicItem, index) => {
+                  this.viewModel.setPlayList(this.viewModel.newMusicList, index)
+                  await this.viewModel.playMusic(musicItem.rid)
+                  this.musicUrl = this.viewModel.musicUrl
+                  this.enableAutoPlayFlag = true
+                  // 同步到全局状态
+                  this.globalState.setPlayList(this.viewModel.newMusicList, index)
+                  this.globalState.setLyricLines(this.viewModel.currentLyricLines)
+                },
+                onDownloadClick: async (musicItem) => {
+                  console.log('下载歌曲:', musicItem.name)
+                  try {
+                    await this.viewModel.playMusic(musicItem.rid)
+                    if (this.musicUrl && musicItem.name && this.context) {
+                      await downMusic(this.musicUrl, musicItem.name + '.mp3', this.context)
+                    } else {
+                      console.error('下载失败: musicUrl为空或context不存在')
+                    }
+                  } catch (error) {
+                    console.error('下载歌曲失败:', error)
+                  }
+                },
+                onCollectClick: (musicItem) => {
+                  console.log('收藏歌曲:', musicItem.name)
+                  const collectKey = `musicCollectData${musicItem.rid}`
+                  const existingData = preferenceUtil.get(collectKey) as musicList
+
+                  if (existingData && existingData.rid === musicItem.rid) {
+                    // 已收藏，执行取消收藏
+                    preferenceUtil.delete(collectKey)
+                    preferenceUtil.removeCollectRid(musicItem.rid)
+                    showToast('取消收藏')
+                  } else {
+                    // 未收藏，执行收藏
+                    preferenceUtil.put(collectKey, musicItem)
+                    preferenceUtil.addCollectRid(musicItem.rid)
+                    showToast('收藏成功')
+                  }
+                  // 重新加载收藏列表
+                  this.loadCollectMusicList()
+                },
+                onRefresh: async () => {
+                  console.log('新歌下拉刷新')
+                  this.viewModel.isRefreshing = true
+                  setTimeout(() => {
+                    this.viewModel.isRefreshing = false
+                  }, 3000)
+                  await this.viewModel.loadNewMusicList()
+                }
+              })
+
+              // 随机
+              MusicTabContent({
+                tabTitle: '随机',
+                musicList: this.viewModel.randomMusicList,
+                collectMusic: this.viewModel.collectMusic,
+                isRefreshing: this.viewModel.isRefreshing,
+                onMusicClick: async (musicItem, index) => {
+                  this.viewModel.setPlayList(this.viewModel.randomMusicList, index)
+                  await this.viewModel.playMusic(musicItem.rid)
+                  this.musicUrl = this.viewModel.musicUrl
+                  this.enableAutoPlayFlag = true
+                  // 同步到全局状态
+                  this.globalState.setPlayList(this.viewModel.randomMusicList, index)
+                  this.globalState.setLyricLines(this.viewModel.currentLyricLines)
+                },
+                onDownloadClick: async (musicItem) => {
+                  console.log('下载歌曲:', musicItem.name)
+                  try {
+                    // 先加载歌曲信息获取URL
+                    await this.viewModel.playMusic(musicItem.rid)
+                    // 等待musicUrl更新
+                    if (this.musicUrl && musicItem.name && this.context) {
+                      await downMusic(this.musicUrl, musicItem.name + '.mp3', this.context)
+                    } else {
+                      console.error('下载失败: musicUrl为空或context不存在')
+                    }
+                  } catch (error) {
+                    console.error('下载歌曲失败:', error)
+                  }
+                },
+                onCollectClick: (musicItem) => {
+                  console.log('收藏歌曲:', musicItem.name)
+                  const collectKey = `musicCollectData${musicItem.rid}`
+                  const existingData = preferenceUtil.get(collectKey) as musicList
+
+                  if (existingData && existingData.rid === musicItem.rid) {
+                    // 已收藏，执行取消收藏
+                    preferenceUtil.delete(collectKey)
+                    preferenceUtil.removeCollectRid(musicItem.rid)
+                    showToast('取消收藏')
+                  } else {
+                    // 未收藏，执行收藏
+                    preferenceUtil.put(collectKey, musicItem)
+                    preferenceUtil.addCollectRid(musicItem.rid)
+                    showToast('收藏成功')
+                  }
+                  // 重新加载收藏列表
+                  this.loadCollectMusicList()
+                },
+                onRefresh: async () => {
+                  console.log('随机歌曲下拉刷新')
+                  this.viewModel.isRefreshing = true
+                  setTimeout(() => {
+                    this.viewModel.isRefreshing = false
+                  }, 3000)
+                  await this.viewModel.loadRandomMusicList()
+                }
+              })
+
+              //收藏
+              MusicTabContent({
+                tabTitle: '收藏',
+                musicList: this.viewModel.collectMusic,
+                collectMusic: this.viewModel.collectMusic,
+                isRefreshing: this.viewModel.isRefreshing,
+                onMusicClick: async (musicItem, index) => {
+                  this.viewModel.setPlayList(this.viewModel.collectMusic, index)
+                  await this.viewModel.playMusic(musicItem.rid)
+                  this.musicUrl = this.viewModel.musicUrl
+                  this.enableAutoPlayFlag = true
+                  // 同步到全局状态
+                  this.globalState.setPlayList(this.viewModel.collectMusic, index)
+                  this.globalState.setLyricLines(this.viewModel.currentLyricLines)
+                },
+                onDownloadClick: async (musicItem) => {
+                  console.log('下载歌曲:', musicItem.name)
+                  try {
+                    // 先加载歌曲信息获取URL
+                    await this.viewModel.playMusic(musicItem.rid)
+                    // 等待musicUrl更新
+                    if (this.musicUrl && musicItem.name && this.context) {
+                      await downMusic(this.musicUrl, musicItem.name + '.mp3', this.context)
+                    } else {
+                      console.error('下载失败: musicUrl为空或context不存在')
+                    }
+                  } catch (error) {
+                    console.error('下载歌曲失败:', error)
+                  }
+                },
+                onCollectClick: (musicItem) => {
+                  console.log('取消收藏歌曲:', musicItem.name)
+                  const collectKey = `musicCollectData${musicItem.rid}`
+                  preferenceUtil.delete(collectKey)
+                  preferenceUtil.removeCollectRid(musicItem.rid)
+                  // 重新加载收藏列表
+                  this.loadCollectMusicList()
+                  showToast('取消收藏')
+                },
+                onRefresh: async () => {
+                  console.log('收藏列表下拉刷新')
+                  this.viewModel.isRefreshing = true
+                  setTimeout(() => {
+                    this.viewModel.isRefreshing = false
+                  }, 3000)
+                  // 重新加载收藏列表
+                  this.loadCollectMusicList()
+                }
+              })
+
+            }
+            .layoutWeight(1)
+            .barHeight(40)
+          }
+        }
+        .layoutWeight(1)
+      }
+
+      Row() {
+        AppMusicTabbar({
+          musicUrl: this.musicUrl,
+          lyrics: this.viewModel.lyrics,
+          currentSongName: this.viewModel.currentPlayList[this.viewModel.currentPlayIndex]?.name || '',
+          currentArtist: this.viewModel.currentPlayList[this.viewModel.currentPlayIndex]?.artist || '',
+          autoPlayEnabled: this.enableAutoPlayFlag,
+          onLrcClick: () => this.onLrcClick(),
+          onProgressUpdate: (progress: number) => {
+            // 同步到viewModel
+            this.viewModel.currentProgress = progress
+            this.viewModel.updateCurrentLyricIndex()
+            // 同步到全局状态
+            this.globalState.updateProgress(progress)
+          },
+          onPreviousClick: async () => {
+            await this.viewModel.playPrevious()
+            this.musicUrl = this.viewModel.musicUrl
+            this.enableAutoPlayFlag = true
+            // 同步到全局状态
+            this.globalState.setPlayList(this.viewModel.currentPlayList, this.viewModel.currentPlayIndex)
+            this.globalState.setLyricLines(this.viewModel.currentLyricLines)
+          },
+          onNextClick: async () => {
+            await this.viewModel.playNext()
+            this.musicUrl = this.viewModel.musicUrl
+            this.enableAutoPlayFlag = true
+            // 同步到全局状态
+            this.globalState.setPlayList(this.viewModel.currentPlayList, this.viewModel.currentPlayIndex)
+            this.globalState.setLyricLines(this.viewModel.currentLyricLines)
+          },
+          onPlayClick: () => {
+            this.enableAutoPlayFlag = true
+          }
+        })
+      }
+      .width('100%')
+      .height('10%')
+    }
+    .width('100%')
+    .height('100%')
   }
 }

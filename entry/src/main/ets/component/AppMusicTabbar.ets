@@ -157,104 +157,6 @@ export struct AppMusicTabbar {
   }
 
   /**
-   * 构建UI
-   * 包含进度条、播放控制按钮、时间显示、音量控制等
-   */
-  build() {
-    Column() {
-      // 进度条
-      Column() {
-        Slider({
-          value: this.currentProgress,
-          max: this.totalDuration,
-          step: 1,
-          min: 0,
-        })
-          .outlineWidth('100%')
-          .width('90%')
-          .backgroundColor('#ffecf5f4')
-          .blockColor('#39c5bb')
-          .selectedColor('#39c5bb')
-          .onChange((time: number) => this.avPlayer?.seek(time))
-      }.height(10)
-      .padding({ bottom: 5 })
-
-      // 歌曲信息显示
-      Row() {
-        Text(`${this.currentSongName} - ${this.currentArtist}`)
-          .fontSize(14)
-          .fontColor('#333333')
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-      .height(18)
-      .width('90%')
-      .justifyContent(FlexAlign.Center)
-
-      // 控制按钮区域
-      Row() {
-        // 左侧: 播放控制按钮
-        Row({ space: 10 }) {
-          Image($r('app.media.last_music'))
-            .width(25)
-            .onClick(() => this.onPreviousClick?.())
-          Image(this.isPlaying ? $r('app.media.player') : $r('app.media.stoped'))
-            .width(25)
-            .onClick(() => this.togglePlay())
-          Image($r('app.media.next_music'))
-            .width(25)
-            .onClick(() => this.onNextClick?.())
-        }
-        .justifyContent(FlexAlign.Center)
-        .layoutWeight(1)
-
-        // 中间: 时间显示
-        Row() {
-          Text() {
-            Span(this.currentTime || '00:00')
-            Span(' / ')
-            Span(this.durationTime || '00:00')
-          }
-        }
-        .backgroundColor(Color.White)
-        .justifyContent(FlexAlign.Center)
-        .layoutWeight(1)
-
-        // 右侧: 功能按钮和音量控制
-        Row({ space: 10 }) {
-          Image($r('app.media.music_list'))
-            .width(25)
-            .onClick(() => this.onPlaylistClick?.())
-          Image($r('app.media.music_lrc'))
-            .width(30)
-            .onClick(() => {
-              this.onLrcClick?.()
-            })
-          VolumeControl({
-            volume: this.volume,
-            reverse: this.reverse,
-            onVolumeChange: (vol: number) => {
-              this.setVolume(vol)
-            }
-          })
-        }
-        .backgroundColor(Color.White)
-        .justifyContent(FlexAlign.Center)
-        .layoutWeight(1)
-      }
-      .backgroundColor(Color.White)
-      .height('100%')
-      .padding({top:8})
-      .alignItems(VerticalAlign.Top)
-      .justifyContent(FlexAlign.Start)
-    }
-    .backgroundColor(Color.White)
-    .justifyContent(FlexAlign.SpaceBetween)
-    .width('100%')
-    .height('100%')
-  }
-
-  /**
    * 加载音乐
    * 设置播放器URL并准备播放,根据autoPlayEnabled决定是否自动播放
    */
@@ -444,5 +346,104 @@ export struct AppMusicTabbar {
     } catch (error) {
       console.error('初始化 AVSession 失败:', error)
     }
+  }
+
+  /**
+   * 构建UI
+   * 包含进度条、播放控制按钮、时间显示、音量控制等
+   */
+  build() {
+    Column() {
+      // 进度条
+      Column() {
+        Slider({
+          value: this.currentProgress,
+          max: this.totalDuration,
+          step: 1,
+          min: 0,
+        })
+          .outlineWidth('100%')
+          .width('90%')
+          .backgroundColor('#ffecf5f4')
+          .blockColor('#39c5bb')
+          .selectedColor('#39c5bb')
+          .onChange((time: number) => this.avPlayer?.seek(time))
+      }.height(10)
+      .padding({ bottom: 5 })
+
+      // 歌曲信息显示
+      Row() {
+        Text(`${this.currentSongName} - ${this.currentArtist}`)
+          .fontSize(14)
+          .fontColor('#333333')
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .height(18)
+      .width('90%')
+      .justifyContent(FlexAlign.Center)
+
+      // 控制按钮区域
+      Row() {
+        // 左侧: 播放控制按钮
+        Row({ space: 10 }) {
+          Image($r('app.media.last_music'))
+            .width(25)
+            .onClick(() => this.onPreviousClick?.())
+          Image(this.isPlaying ? $r('app.media.player') : $r('app.media.stoped'))
+            .width(25)
+            .onClick(() => this.togglePlay())
+          Image($r('app.media.next_music'))
+            .width(25)
+            .onClick(() => this.onNextClick?.())
+        }
+        .justifyContent(FlexAlign.Center)
+        .layoutWeight(1)
+
+        // 中间: 时间显示
+        Row() {
+          Text() {
+            Span(this.currentTime || '00:00')
+            Span(' / ')
+            Span(this.durationTime || '00:00')
+          }
+        }
+        .backgroundColor(Color.White)
+        .justifyContent(FlexAlign.Center)
+        .layoutWeight(1)
+
+        // 右侧: 功能按钮和音量控制
+        Row({ space: 10 }) {
+          Image($r('app.media.music_list'))
+            .width(25)
+            .onClick(() => this.onPlaylistClick?.())
+          Image($r('app.media.music_lrc'))
+            .width(30)
+            .onClick(() => {
+              this.onLrcClick?.()
+            })
+          VolumeControl({
+            volume: this.volume,
+            reverse: this.reverse,
+            onVolumeChange: (vol: number) => {
+              this.setVolume(vol)
+            }
+          })
+        }
+        .backgroundColor(Color.White)
+        .justifyContent(FlexAlign.Center)
+        .layoutWeight(1)
+      }
+      .backgroundColor(Color.White)
+      .height('100%')
+      .padding({ top: 8 })
+      .alignItems(VerticalAlign.Top)
+      .justifyContent(FlexAlign.Start)
+    }
+    .zIndex(999)
+    .backgroundColor(Color.White)
+    .justifyContent(FlexAlign.SpaceBetween)
+    .width('100%')
+    .height('100%')
   }
 }

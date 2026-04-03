@@ -26,6 +26,9 @@ export struct MusicTabContent {
   /** 歌曲列表数据 */
   @Param musicList: musicList[] = []
 
+  /** 收藏列表(用于判断歌曲是否已收藏) */
+  @Param collectMusic: musicList[] = []
+
   /** Tab标题 */
   @Param tabTitle: string = ''
 
@@ -52,14 +55,27 @@ export struct MusicTabContent {
    */
   build() {
     TabContent() {
-      MusicListContainer({
-        musicList: this.musicList,
-        isRefreshing: this.isRefreshing,
-        onMusicClick: this.onMusicClick,
-        onDownloadClick: this.onDownloadClick,
-        onCollectClick: this.onCollectClick,
-        onRefresh: this.onRefresh
-      })
+      if (this.musicList){
+        MusicListContainer({
+          musicList: this.musicList,
+          collectMusic: this.collectMusic,
+          isRefreshing: this.isRefreshing,
+          onMusicClick: this.onMusicClick,
+          onDownloadClick: this.onDownloadClick,
+          onCollectClick: this.onCollectClick,
+          onRefresh: this.onRefresh
+        })
+      } else {
+        Column() {
+          Text('暂无数据').fontSize(16).fontColor(Color.Gray).textAlign(TextAlign.Center)
+        }
+        .height('100%')
+        .width('100%')
+        .padding({ top: 10 })
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
+      }
+
     }
     .tabBar(this.tabTitle)
   }

@@ -42,10 +42,10 @@ export struct MusicListItem {
   /** 收藏按钮点击回调 */
   @Event onCollectClick?: (item: musicList) => void
 
-  // ========== 本地状态 ==========
+  // ========== 可选参数 ==========
 
-  /** 是否已收藏 */
-  @Local isCollected: boolean = false
+  /** 是否已收藏(从父组件传入) */
+  @Param isCollected: boolean = false
 
   /**
    * 构建UI
@@ -99,7 +99,6 @@ export struct MusicListItem {
           .height(20)
           .fillColor(this.isCollected ? '#ff6b6b' : '#666666')
           .onClick(() => {
-            this.isCollected = !this.isCollected
             this.onCollectClick?.(this.item)
           })
       }

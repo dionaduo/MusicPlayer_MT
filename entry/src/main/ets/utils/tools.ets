@@ -38,7 +38,7 @@ export const ConvertTime = (num: number | null | undefined): string => {
  * showToast 显示Toast提示
  * @param message 提示消息
  */
-async function showToast(message: string): Promise<void> {
+export async function showToast(message: string): Promise<void> {
   try {
     await promptAction.showToast({ message, duration: 3000, bottom: '10%' });
   } catch (error) {

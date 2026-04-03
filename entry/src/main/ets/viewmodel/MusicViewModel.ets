@@ -64,6 +64,9 @@ export class MusicViewModel {
   /** 收藏状态 */
   @Trace collection: boolean = false
 
+  /** 收藏的歌曲 */
+  @Trace collectMusic: musicList[] = []
+
   // ========== UI状态 ==========
 
   /** 是否显示歌词 */
