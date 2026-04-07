@@ -1,4 +1,4 @@
-/**
+ /**
  * @file MusicListContainer.ets
  * @description 歌曲列表容器组件
  * @module component
@@ -13,8 +13,8 @@
  * - 弹性滚动效果
  */
 
-import { musicList } from '../model/musicResp'
-import { MusicListItem } from './MusicListItem'
+ import { musicList } from '../model/musicResp'
+ import { MusicListItem } from './MusicListItem'
 
 /**
  * MusicListContainer 歌曲列表容器组件

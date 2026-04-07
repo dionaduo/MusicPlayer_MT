@@ -17,6 +17,7 @@
 
 import { musicData, musicInfo, musicList, musicResponse } from '../model/musicResp'
 import { getMusicInfo, getMusicList } from '../api/musicApi'
+import { PlaybackStrategy } from '../utils/PlaybackMode'
 
 /**
  * MusicViewModel 音乐播放器视图模型
@@ -289,7 +290,7 @@ export class MusicViewModel {
   async playPrevious(): Promise<void> {
     if (this.currentPlayList.length === 0) return
 
-    this.currentPlayIndex = (this.currentPlayIndex - 1 + this.currentPlayList.length) % this.currentPlayList.length
+    this.currentPlayIndex = PlaybackStrategy.getPreviousIndex(this.currentPlayIndex, this.currentPlayList)
     await this.playMusic(this.currentPlayList[this.currentPlayIndex].rid)
   }
 
@@ -299,7 +300,7 @@ export class MusicViewModel {
   async playNext(): Promise<void> {
     if (this.currentPlayList.length === 0) return
 
-    this.currentPlayIndex = (this.currentPlayIndex + 1) % this.currentPlayList.length
+    this.currentPlayIndex = PlaybackStrategy.getNextIndex(this.currentPlayIndex, this.currentPlayList)
     await this.playMusic(this.currentPlayList[this.currentPlayIndex].rid)
   }
 

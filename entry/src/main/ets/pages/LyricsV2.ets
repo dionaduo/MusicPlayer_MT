@@ -14,7 +14,6 @@
  */
 
 import { musicInfo, musicList } from '../model/musicResp'
-import { router } from '@kit.ArkUI'
 import { MusicGlobalState } from '../utils/MusicGlobalState'
 
 /**
@@ -156,7 +155,7 @@ struct LyricsV2 {
    * 返回上一页
    */
   onBackClick(): void {
-    router.back()
+    this.getUIContext().getRouter().back()
   }
 
   build() {
@@ -164,11 +163,11 @@ struct LyricsV2 {
     Column() {
       // 顶部导航栏
       Row() {
-        Image($r('sys.symbol.chevron_left'))
+        Image($r('app.media.retrun'))
           .width(24)
           .height(24)
+          .fillColor(Color.Black)
           .onClick(() => this.onBackClick())
-          .colorFilter(Color.Black)
 
         Text('歌词')
           .fontSize(18)
@@ -183,7 +182,7 @@ struct LyricsV2 {
       }
       .width('100%')
       .height(50)
-      .padding({ left: 16, right: 16 })
+      .padding({ top:30,left: 16, right: 16 })
       .justifyContent(FlexAlign.SpaceBetween)
 
       // 歌曲信息
@@ -213,6 +212,8 @@ struct LyricsV2 {
               .fontColor('#666666')
               .margin({ top: 4 })
           }
+          .width('60%')
+          .justifyContent(FlexAlign.Start)
         }
         .padding({ left: 20 })
         .justifyContent(FlexAlign.Start)

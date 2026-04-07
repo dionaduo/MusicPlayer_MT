@@ -25,6 +25,7 @@ import { common } from '@kit.AbilityKit'
 import { preferenceUtil } from '../utils/KVDatabaseUtil'
 import { router } from '@kit.ArkUI'
 import { MusicGlobalState } from '../utils/MusicGlobalState'
+import { PlaybackModeConfig } from '../utils/PlaybackMode'
 
 /**
  * Index 音乐播放器主页面
@@ -144,6 +145,14 @@ struct Index {
     } catch (error) {
       console.error('跳转到歌词页面失败:', error)
     }
+  }
+
+  /**
+   * 播放模式切换事件
+   */
+  onPlaybackModeChange(mode: PlaybackModeConfig): void {
+    console.log('播放模式切换:', mode.name)
+    showToast(`切换到${mode.name}`)
   }
 
 
@@ -487,6 +496,7 @@ struct Index {
           lyrics: this.viewModel.lyrics,
           currentSongName: this.viewModel.currentPlayList[this.viewModel.currentPlayIndex]?.name || '',
           currentArtist: this.viewModel.currentPlayList[this.viewModel.currentPlayIndex]?.artist || '',
+          currentCoverUrl: this.viewModel.currentPlayList[this.viewModel.currentPlayIndex]?.pic || '',
           autoPlayEnabled: this.enableAutoPlayFlag,
           onLrcClick: () => this.onLrcClick(),
           onProgressUpdate: (progress: number) => {
@@ -514,6 +524,9 @@ struct Index {
           },
           onPlayClick: () => {
             this.enableAutoPlayFlag = true
+          },
+          onPlaybackModeChange: (mode: PlaybackModeConfig) => {
+            this.onPlaybackModeChange(mode)
           }
         })
       }

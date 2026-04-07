@@ -16,9 +16,12 @@
  */
 
 import { media } from '@kit.MediaKit'
+import { image } from '@kit.ImageKit'
+import { http } from '@kit.NetworkKit'
 import { ConvertTime } from '../utils/tools'
 import { VolumeControl } from './VolumeControl'
 import { avSession } from '@kit.AVSessionKit'
+import { PlaybackMode, PlaybackModeConfig, PlaybackStrategy } from '../utils/PlaybackMode'
 
 /**
  * AppMusicTabbar 音乐播放器底部控制栏组件
@@ -41,6 +44,9 @@ export struct AppMusicTabbar {
 
   /** 当前歌手名称 */
   @Param currentArtist: string = ''
+
+  /** 当前歌曲封面URL */
+  @Param currentCoverUrl: string = ''
 
   /** 是否启用自动播放 */
   @Param autoPlayEnabled: boolean = false
@@ -74,6 +80,9 @@ export struct AppMusicTabbar {
   /** 音量控制方向 */
   @Local reverse: boolean = true
 
+  /** 当前播放模式配置 */
+  @Local playbackModeConfig: PlaybackModeConfig = PlaybackStrategy.getCurrentModeConfig()
+
   // ========== 事件回调 ==========
 
   /** 歌词按钮点击回调 */
@@ -94,6 +103,9 @@ export struct AppMusicTabbar {
   /** 播放按钮点击回调 */
   @Event onPlayClick?: () => void
 
+  /** 播放模式切换回调 */
+  @Event onPlaybackModeChange?: (mode: PlaybackModeConfig) => void
+
   // ========== 常量 ==========
 
   /** 进度更新间隔(毫秒) */
@@ -110,7 +122,6 @@ export struct AppMusicTabbar {
    * 创建AVPlayer播放器并设置监听器
    */
   async aboutToAppear(): Promise<void> {
-    console.log('AppMusicTabbar aboutToAppear 开始')
     try {
       this.avPlayer = await media.createAVPlayer()
       if (this.avPlayer) {
@@ -121,6 +132,25 @@ export struct AppMusicTabbar {
       }
     } catch (error) {
       console.error('创建播放器失败', error)
+    }
+  }
+
+  /**
+   * 组件销毁
+   * 清理播放器和AVSession资源
+   */
+  async aboutToDisappear(): Promise<void> {
+    try {
+      if (this.avSession) {
+        await this.avSession.destroy()
+        console.log('AVSession 销毁成功')
+      }
+      if (this.avPlayer) {
+        await this.avPlayer.release()
+        console.log('播放器释放成功')
+      }
+    } catch (error) {
+      console.error('清理资源失败:', error)
     }
   }
 
@@ -154,6 +184,25 @@ export struct AppMusicTabbar {
         this.loadMusic()
       }
     }
+  }
+
+  /**
+   * 监听歌曲信息变化
+   * 当歌曲名称、歌手或封面变化时更新AVSession元数据
+   */
+  @Monitor('currentSongName')
+  onSongInfoChange(): void {
+    this.updateAVSessionMetadata()
+  }
+
+  @Monitor('currentArtist')
+  onArtistChange(): void {
+    this.updateAVSessionMetadata()
+  }
+
+  @Monitor('currentCoverUrl')
+  onCoverChange(): void {
+    this.updateAVSessionMetadata()
   }
 
   /**
@@ -252,8 +301,15 @@ export struct AppMusicTabbar {
           break
         case 'completed':
           this.isPlaying = false
-          // 音乐播放完毕,自动播放下一首
-          this.onNextClick?.()
+          // 根据播放模式决定行为
+          const currentMode = PlaybackStrategy.getCurrentMode()
+          if (currentMode === PlaybackMode.SINGLE_LOOP) {
+            // 单曲循环：重新播放当前歌曲
+            this.avPlayer?.play()
+          } else {
+            // 顺序播放或随机播放：播放下一首
+            this.onNextClick?.()
+          }
           break
         case 'error':
           console.error('播放失败: ', state)
@@ -319,6 +375,14 @@ export struct AppMusicTabbar {
   }
 
   /**
+   * 切换播放模式
+   */
+  private switchPlaybackMode(): void {
+    this.playbackModeConfig = PlaybackStrategy.switchMode()
+    this.onPlaybackModeChange?.(this.playbackModeConfig)
+  }
+
+  /**
    * 初始化AVSession媒体会话
    * 用于系统级媒体控制(通知栏、锁屏界面等)
    */
@@ -327,14 +391,39 @@ export struct AppMusicTabbar {
       const ctx = this.getUIContext().getHostContext()
       if (ctx) {
         this.avSession = await avSession.createAVSession(ctx, 'musicPlayer', 'audio')
+        // 添加事件监听
+        this.setupAVSessionListeners()
       }
 
       if (this.avSession) {
-        await this.avSession.setAVMetadata({
+        const metadata: avSession.AVMetadata = {
           assetId: 'music_001',
-          title: '湘女多情',
-          artist: '周杰伦',
-        })
+          title: this.currentSongName || '未知歌曲',
+          artist: this.currentArtist || '未知歌手'
+        }
+
+        // 如果有封面URL，尝试加载并设置封面
+        if (this.currentCoverUrl) {
+          try {
+            const httpRequest = http.createHttp()
+            httpRequest.request(this.currentCoverUrl, (err, data) => {
+              if (!err) {
+                const code = data.responseCode
+                if (code === 200) {
+                  const imageSource = image.createImageSource(data.result as ArrayBuffer)
+                  imageSource.createPixelMap().then((pixelMap: image.PixelMap) => {
+                    metadata.mediaImage = pixelMap
+                    this.avSession?.setAVMetadata(metadata)
+                  })
+                }
+              }
+            })
+          } catch (error) {
+            console.error('加载封面图片失败:', error)
+          }
+        }
+
+        await this.avSession.setAVMetadata(metadata)
 
         await this.avSession.setAVPlaybackState({
           state: avSession.PlaybackState.PLAYBACK_STATE_PAUSE,
@@ -342,9 +431,123 @@ export struct AppMusicTabbar {
         })
 
         await this.avSession.activate()
+        console.log('AVSession 激活成功')
       }
     } catch (error) {
       console.error('初始化 AVSession 失败:', error)
+    }
+  }
+
+  /**
+   * 设置AVSession事件监听
+   * 处理系统媒体控制命令
+   */
+  private setupAVSessionListeners(): void {
+    if (!this.avSession) {
+      return
+    }
+
+    // 监听播放控制命令
+    this.avSession.on('play', () => {
+      console.log('收到播放命令')
+      this.togglePlay()
+    })
+
+    this.avSession.on('pause', () => {
+      console.log('收到暂停命令')
+      this.togglePlay()
+    })
+
+    this.avSession.on('playNext', () => {
+      console.log('收到下一首命令')
+      this.onNextClick?.()
+    })
+
+    this.avSession.on('playPrevious', () => {
+      console.log('收到上一首命令')
+      this.onPreviousClick?.()
+    })
+
+    this.avSession.on('fastForward', () => {
+      console.log('收到快进命令')
+      if (this.avPlayer && this.currentProgress < this.totalDuration) {
+        this.avPlayer.seek(this.currentProgress + 10)
+      }
+    })
+
+    this.avSession.on('rewind', () => {
+      console.log('收到快退命令')
+      if (this.avPlayer && this.currentProgress > 0) {
+        this.avPlayer.seek(this.currentProgress - 10)
+      }
+    })
+
+    this.avSession.on('seek', (position) => {
+      console.log('收到跳转命令:', position)
+      if (this.avPlayer) {
+        this.avPlayer.seek(position)
+      }
+    })
+
+    this.avSession.on('setSpeed', (speed) => {
+      console.log('收到倍速命令:', speed)
+      if (this.avPlayer) {
+        this.avPlayer.setSpeed(speed)
+      }
+    })
+
+    this.avSession.on('setLoopMode', (mode) => {
+      console.log('收到循环模式命令:', mode)
+      // 可以根据mode更新循环模式
+    })
+
+    this.avSession.on('toggleFavorite', (assetId) => {
+      console.log('收到收藏命令:', assetId)
+      // 可以处理收藏逻辑
+    })
+  }
+
+  /**
+   * 更新AVSession元数据
+   * 当歌曲信息变化时调用
+   */
+  private async updateAVSessionMetadata(): Promise<void> {
+    if (!this.avSession) {
+      return
+    }
+
+    try {
+      const metadata: avSession.AVMetadata = {
+        assetId: 'music_001',
+        title: this.currentSongName || '未知歌曲',
+        artist: this.currentArtist || '未知歌手'
+      }
+
+      // 如果有封面URL，尝试加载并设置封面
+      if (this.currentCoverUrl) {
+        try {
+          const httpRequest = http.createHttp()
+          httpRequest.request(this.currentCoverUrl, (err, data) => {
+            if (!err) {
+              const code = data.responseCode
+              if (code === 200) {
+                const imageSource = image.createImageSource(data.result as ArrayBuffer)
+                imageSource.createPixelMap().then((pixelMap: image.PixelMap) => {
+                  metadata.mediaImage = pixelMap
+                  this.avSession?.setAVMetadata(metadata)
+                })
+              }
+            }
+          })
+        } catch (error) {
+          console.error('加载封面图片失败:', error)
+        }
+      }
+
+      await this.avSession.setAVMetadata(metadata)
+      console.log('AVSession 元数据更新成功')
+    } catch (error) {
+      console.error('更新 AVSession 元数据失败:', error)
     }
   }
 
@@ -414,9 +617,9 @@ export struct AppMusicTabbar {
 
         // 右侧: 功能按钮和音量控制
         Row({ space: 10 }) {
-          Image($r('app.media.music_list'))
+          Image(this.playbackModeConfig.icon)
             .width(25)
-            .onClick(() => this.onPlaylistClick?.())
+            .onClick(() => this.switchPlaybackMode())
           Image($r('app.media.music_lrc'))
             .width(30)
             .onClick(() => {
